@@ -95,7 +95,6 @@ func main() {
 	case sig := <-shutdownSignalled:
 		logger.Info("shutdown signal received", "signal", sig.String())
 
-		// Даем серверу 15 секунд на завершение текущих активных медицинских запросов
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer shutdownCancel()
 
