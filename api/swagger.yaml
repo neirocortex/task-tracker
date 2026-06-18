@@ -1,0 +1,240 @@
+openapi: 3.0.3
+info:
+  title: Medical Information System (MIS) - Task Tracker API
+  description: |-
+    API модуля трекера рабочих задач для медицинского персонала (врачи, администраторы, медсестры).
+  version: 1.0.0
+servers:
+  -
+    url: http://localhost:8080/api/v1
+    description: Локальный сервер разработки (Docker)
+
+paths:
+  /tasks:
+    post:
+      summary: Создать новую рабочую задачу
+      description: Создает задачу в системе. По умолчанию новой задаче присваивается статус `NEW`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Задача успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Некорректные входные данные или дата выполнения в прошлом
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
+    get:
+      summary: Получить список задач с фильтрацией
+      description: Возвращает отсортированный по дате выполнения (due_date) список задач, соответствующих фильтрам.
+      parameters:
+        -
+          name: status
+          in: query
+          description: Фильтр по текущему статусу задачи
+          required: false
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+        -
+          name: due_date_from
+          in: query
+          description: Нижняя граница даты выполнения (формат RFC3339)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2026-06-18T00:00:00Z'
+        -
+          name: due_date_to
+          in: query
+          description: Верхняя граница даты выполнения (формат RFC3339)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2026-06-19T23:59:59Z'
+      responses:
+        '200':
+          description: Список задач успешно получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /tasks/{id}:
+    get:
+      summary: Получить детальную информацию о задаче по ID
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          description: Идентификатор задачи
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Данные задачи успешно получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Некорректный формат ID задачи
+        '404':
+          description: Задача с указанным ID не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Полное обновление существующей задачи
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          description: Идентификатор задачи
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Задача успешно обновлена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: updated
+        '400':
+          description: Некорректный JSON или невалидные данные
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Удалить задачу из системы
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          description: Идентификатор задачи
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Задача успешно удалена (нет содержимого в ответе)
+        '400':
+          description: Некорректный формат ID
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    TaskStatus:
+      type: string
+      enum: [NEW, IN_PROGRESS, DONE, CANCELED]
+      example: NEW
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+        - due_date
+      properties:
+        title:
+          type: string
+          description: Краткое название медицинской задачи
+          example: 'Сделать обход пациентов'
+        description:
+          type: string
+          description: Подробное описание действий по задаче
+          example: 'Проверить пульс и давление у пациентов в палатах 3 и 4.'
+        due_date:
+          type: string
+          format: date-time
+          description: Запланированное время выполнения задачи (обязательно в будущем)
+          example: '2026-12-31T15:00:00Z'
+
+    UpdateTaskRequest:
+      type: object
+      required:
+        - title
+        - due_date
+        - status
+      properties:
+        title:
+          type: string
+          example: 'Сделать обход пациентов (Срочно)'
+        description:
+          type: string
+          example: 'Проверить пульс, давление и выдать новые назначения.'
+        due_date:
+          type: string
+          format: date-time
+          example: '2026-12-31T16:00:00Z'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          example: 'Сделать обход пациентов'
+        description:
+          type: string
+          example: 'Проверить пульс и давление у пациентов в палатах 3 и 4.'
+        due_date:
+          type: string
+          format: date-time
+          example: '2026-12-31T15:00:00Z'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: 'task not found'

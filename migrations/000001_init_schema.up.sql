@@ -1,0 +1,14 @@
+CREATE TYPE task_status AS ENUM ('NEW', 'IN_PROGRESS', 'DONE', 'CANCELED');
+
+CREATE TABLE tasks (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    due_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    status task_status NOT NULL DEFAULT 'NEW',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_due_date ON tasks(due_date);

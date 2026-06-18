@@ -1,0 +1,48 @@
+services:
+  # 1. Isolated DB PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: med_mis_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: med_mis
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Check to start migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d med_mis"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  # 2. Automatic migrations after DB start
+  migrations:
+    image: migrate/migrate:v4.17.0
+    container_name: med_mis_migrations
+    volumes:
+      - ./migrations:/migrations
+    command: -path=/migrations -database "postgres://postgres:postgres@postgres:5432/med_mis?sslmode=disable" up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 3. Api starts after bigrations are done
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: med_mis_api
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/med_mis?sslmode=disable
+      - SERVER_ADDRESS=:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
