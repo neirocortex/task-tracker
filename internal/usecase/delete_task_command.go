@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// sqrs for solid srp : every command has separate object
+// cqrs for solid srp : every command has separate object
 type DeleteTaskCommand struct {
 	repo TaskRemover
 }

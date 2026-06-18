@@ -5,7 +5,7 @@ import (
 	"taskTracker/internal/domain"
 )
 
-// sqrs for solid srp : every command has separate object
+// cqrs for solid srp : every command has separate object
 type GetTaskByIDQuery struct {
 	repo TaskViewer
 }

@@ -9,7 +9,7 @@ import (
 
 var ErrInvalidDueDate = errors.New("due date must be in the future")
 
-// sqrs for solid srp : every command has separate object
+// cqrs for solid srp : every command has separate object
 type CreateTaskCommand struct {
 	repo TaskSaver
 }
