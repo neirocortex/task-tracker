@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"taskTracker/internal/domain"
 )
 
@@ -14,20 +15,20 @@ func NewTagRepository(db *sql.DB) *TagRepository {
 	return &TagRepository{db: db}
 }
 
-func (r *TagRepository) SyncTaskTags(ctx context.Context, taskID int64, tagNames []string) error {
+func (r *TagRepository) SyncTaskTags(ctx context.Context, taskID int64, tagNames []string) ([]string, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx, "DELETE FROM task_tags WHERE task_id = $1", taskID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(tagNames) == 0 {
-		return tx.Commit()
+		return []string{}, tx.Commit()
 	}
 
 	insertQuery := `
@@ -35,22 +36,34 @@ func (r *TagRepository) SyncTaskTags(ctx context.Context, taskID int64, tagNames
 		SELECT $1, name 
 		FROM tags 
 		WHERE name = $2
-		ON CONFLICT DO NOTHING`
+		ON CONFLICT DO NOTHING
+		RETURNING tag_name`
 
 	stmt, err := tx.PrepareContext(ctx, insertQuery)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer stmt.Close()
 
+	var syncTags []string
 	for _, name := range tagNames {
-		_, err := stmt.ExecContext(ctx, taskID, name)
+		var insertedName string
+		err := stmt.QueryRowContext(ctx, taskID, name).Scan(&insertedName)
 		if err != nil {
-			return err
+			if errors.Is(err, sql.ErrNoRows) {
+				// silent fail: tag is removed
+				continue
+			}
+			return nil, err
 		}
+		syncTags = append(syncTags, insertedName)
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return syncTags, nil
 }
 
 func (r *TagRepository) FetchTagsForTasks(ctx context.Context, taskIDs []int64) (map[int64][]domain.Tag, error) {

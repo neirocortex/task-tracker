@@ -14,7 +14,7 @@ type TaskTagsBulkViewer interface {
 }
 
 type TaskTagsSyncer interface {
-	SyncTaskTags(ctx context.Context, taskID int64, tagNames []string) error
+	SyncTaskTags(ctx context.Context, taskID int64, tagNames []string) ([]string, error)
 }
 
 type TagSaver interface {
