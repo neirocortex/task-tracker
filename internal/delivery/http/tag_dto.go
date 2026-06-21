@@ -34,3 +34,14 @@ func NewTagListResponse(tags []domain.Tag) []TagResponse {
 	}
 	return response
 }
+
+type TagUpdateRequest struct {
+	NewName string `json:"new_name"`
+}
+
+func (r *TagUpdateRequest) Validate() error {
+	if r.NewName == "" {
+		return domain.ErrTagEmpty
+	}
+	return nil
+}

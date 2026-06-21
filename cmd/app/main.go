@@ -59,6 +59,7 @@ func main() {
 	taskListQ := usecase.NewListTasksQuery(taskRepository, tagRepository)
 
 	tagCreateCmd := usecase.NewCreateTagCommand(tagRepository)
+	tagUpdateCmd := usecase.NewUpdateTagCommand(tagRepository)
 	tagDeleteCmd := usecase.NewDeleteTagCommand(tagRepository)
 	tagListQ := usecase.NewGetTagsQuery(tagRepository)
 
@@ -68,7 +69,7 @@ func main() {
 	taskHandler := deliveryHttp.NewTaskHandler(taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskGetQ, taskListQ)
 	taskHandler.RegisterRoutes(mux)
 
-	tagHandler := deliveryHttp.NewTagHandler(tagCreateCmd, tagDeleteCmd, tagListQ)
+	tagHandler := deliveryHttp.NewTagHandler(tagCreateCmd, tagUpdateCmd, tagDeleteCmd, tagListQ)
 	tagHandler.RegisterRoutes(mux)
 
 	// start server

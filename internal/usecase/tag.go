@@ -24,3 +24,7 @@ type TagSaver interface {
 type TagRemover interface {
 	DeleteTagFromRegistry(ctx context.Context, tagName string) error
 }
+
+type TagModifier interface {
+	UpdateTagInRegistry(ctx context.Context, oldName string, newName string) error
+}

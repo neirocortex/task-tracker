@@ -126,7 +126,7 @@ curl -X POST http://localhost:8080/api/v1/tasks \
     "title": "Обход палаты №4",
     "description": "Проверить состояние пациентов после утренней операции",
     "due_date": "2026-12-31T10:00:00Z",
-    "tags": ["операции", "звонок", "несуществующий_тег"]
+    "tags": ["операции", "звонок", "Лор"]
   }'
 ```
 
@@ -157,7 +157,7 @@ curl "http://localhost:8080/api/v1/tasks?status=IN_PROGRESS"
 curl -X POST http://localhost:8080/api/v1/tags \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "консилиум"
+    "name": "Лор"
   }'
 ```
 
@@ -167,9 +167,19 @@ curl -X POST http://localhost:8080/api/v1/tags \
 curl http://localhost:8080/api/v1/tags
 ```
 
-##### 6. Удаление кастомного тега из системы (DELETE)
+##### 6. Каскадное переименование тега в справочнике (PUT)
+Изменение имени автоматически обновит текстовый маркер во всех связанных задачах.
 ```bash
-curl -X DELETE http://localhost:8080/api/v1/tags/консилиум
+curl -X PUT http://localhost:8080/api/v1/tags/Лор \
+  -H "Content-Type: application/json" \
+  -d '{
+    "new_name": "Оториноларинголог"
+  }'
+```
+
+##### 7. Удаление кастомного тега из системы (DELETE)
+```bash
+curl -X DELETE http://localhost:8080/api/v1/tags/Оториноларинголог
 ```
 
 ##### 7. Проверка защиты системных тегов (DELETE)

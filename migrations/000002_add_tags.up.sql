@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS tags (
 
 CREATE TABLE IF NOT EXISTS task_tags (
     task_id BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    tag_name VARCHAR(50) NOT NULL REFERENCES tags(name) ON DELETE CASCADE, -- Авто-очистка связей
+    tag_name VARCHAR(50) NOT NULL REFERENCES tags(name) ON UPDATE CASCADE ON DELETE CASCADE,
     PRIMARY KEY (task_id, tag_name)
 );
 

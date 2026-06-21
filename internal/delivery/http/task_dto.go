@@ -55,16 +55,13 @@ type TaskResponse struct {
 	Description string            `json:"description"`
 	DueDate     string            `json:"due_date"`
 	Status      domain.TaskStatus `json:"status"`
-	Tags        []TagResponse     `json:"tags"`
+	Tags        []string          `json:"tags"`
 }
 
 func NewTaskResponse(t *domain.Task) TaskResponse {
-	dtoTags := make([]TagResponse, len(t.Tags))
+	dtoTags := make([]string, len(t.Tags))
 	for i, tag := range t.Tags {
-		dtoTags[i] = TagResponse{
-			Name:     tag.Name,
-			IsSystem: tag.IsSystem,
-		}
+		dtoTags[i] = tag.Name
 	}
 
 	return TaskResponse{

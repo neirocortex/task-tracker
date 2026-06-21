@@ -123,3 +123,21 @@ func (r *TagRepository) CreateTagInRegistry(ctx context.Context, tag domain.Tag)
 	_, err := r.db.ExecContext(ctx, "INSERT INTO tags (name, is_system) VALUES ($1, $2) ON CONFLICT DO NOTHING", tag.Name, tag.IsSystem)
 	return err
 }
+
+func (r *TagRepository) UpdateTagInRegistry(ctx context.Context, oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	query := `UPDATE tags SET name = $1 WHERE name = $2 AND is_system = FALSE`
+	res, err := r.db.ExecContext(ctx, query, newName, oldName)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err == nil && rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}

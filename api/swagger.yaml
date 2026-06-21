@@ -196,14 +196,67 @@ paths:
         '201':
           description: Тег успешно создан в справочнике
         '400':
-          description: Невалидные входные данные (например, пустое имя)
+          description: Невалидные входные данные или некорректный JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Внутренняя ошибка сервера
 
   /tags/{name}:
+    put:
+      summary: Изменить имя существующего кастомного тега
+      description: Переименовывает тег в справочнике МИС. Связанные задачи каскадно обновляются силами СУБД (ON UPDATE CASCADE). Изменение системных тегов запрещено.
+      parameters:
+        -
+          name: name
+          in: path
+          required: true
+          description: Текущее уникальное имя тега для изменения
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagUpdateRequest'
+      responses:
+        '200':
+          description: Тег успешно переименован
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: updated
+        '400':
+          description: Невалидное новое имя или некорректный JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Попытка изменения защищенного системного тега
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Указанный тег не найден в справочнике
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
     delete:
       summary: Удалить кастомный тег из системы
-      description: Удаляет тег из справочника МИС. Связи с задачами вычищаются каскадно на уровне БД. Удаление системных тегов под запретом (возвращает 403).
+      description: Удаляет тег из справочника МИС. Связи с задачами вычищаются каскадно на уровне БД (ON DELETE CASCADE). Удаление системных тегов под запретом.
       parameters:
         -
           name: name
@@ -217,9 +270,12 @@ paths:
           description: Тег успешно удален из системы
         '403':
           description: Попытка удаления защищенного системного тега
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Внутренняя ошибка сервера
-
 components:
   schemas:
     TaskStatus:
@@ -313,6 +369,16 @@ components:
           type: string
           maxLength: 50
           example: 'консилиум'
+
+    TagUpdateRequest:
+      type: object
+      required:
+        - new_name
+      properties:
+        new_name:
+          type: string
+          maxLength: 50
+          example: 'Оториноларинголог'
 
     TagResponse:
       type: object
