@@ -29,4 +29,6 @@ type TaskFilter struct {
 	Status      *TaskStatus
 	DueDateFrom *time.Time
 	DueDateTo   *time.Time
+	Limit       int
+	Offset      int
 }

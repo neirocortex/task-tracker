@@ -6,7 +6,7 @@ import (
 )
 
 type TagLister interface {
-	FindAllTags(ctx context.Context) ([]domain.Tag, error)
+	FindAllTags(ctx context.Context, limit, offset int) ([]domain.Tag, int, error)
 }
 
 type TaskTagsBulkViewer interface {

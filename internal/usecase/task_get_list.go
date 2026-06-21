@@ -15,10 +15,15 @@ func NewListTasksQuery(taskRepo TaskViewer, tagRepo TaskTagsBulkViewer) *ListTas
 	return &ListTasksQuery{taskRepo: taskRepo, tagRepo: tagRepo}
 }
 
-func (q *ListTasksQuery) Execute(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, error) {
-	tasks, err := q.taskRepo.GetList(ctx, filter)
+type PaginatedTasks struct {
+	Tasks      []domain.Task
+	TotalCount int
+}
+
+func (q *ListTasksQuery) Execute(ctx context.Context, filter domain.TaskFilter) (PaginatedTasks, error) {
+	tasks, totalCount, err := q.taskRepo.GetList(ctx, filter)
 	if err != nil || len(tasks) == 0 {
-		return tasks, err
+		return PaginatedTasks{Tasks: tasks, TotalCount: totalCount}, err
 	}
 
 	taskIDs := make([]int64, len(tasks))
@@ -28,7 +33,7 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter domain.TaskFilter) 
 
 	tagsMap, err := q.tagRepo.FetchTagsForTasks(ctx, taskIDs)
 	if err != nil {
-		return nil, err
+		return PaginatedTasks{}, err
 	}
 
 	for i := range tasks {
@@ -39,5 +44,5 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter domain.TaskFilter) 
 		}
 	}
 
-	return tasks, nil
+	return PaginatedTasks{Tasks: tasks, TotalCount: totalCount}, nil
 }

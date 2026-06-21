@@ -45,3 +45,15 @@ func (r *TagUpdateRequest) Validate() error {
 	}
 	return nil
 }
+
+type PaginatedTagsResponse struct {
+	Data       []TagResponse     `json:"data"`
+	Pagination TagPaginationMeta `json:"pagination"`
+}
+
+type TagPaginationMeta struct {
+	CurrentPage int `json:"current_page"`
+	Limit       int `json:"limit"`
+	TotalItems  int `json:"total_items"`
+	TotalPages  int `json:"total_pages"`
+}

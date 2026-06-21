@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"taskTracker/internal/domain"
 	"taskTracker/internal/usecase"
 )
@@ -62,13 +63,44 @@ func (h *TagHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TagHandler) GetTags(w http.ResponseWriter, r *http.Request) {
-	tags, err := h.listQuery.Execute(r.Context())
+	q := r.URL.Query()
+
+	page, _ := strconv.Atoi(q.Get("page"))
+	if page <= 0 {
+		page = 1
+	}
+
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	if limit <= 0 {
+		limit = 20
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	offset := (page - 1) * limit
+
+	paginatedData, err := h.listQuery.Execute(r.Context(), limit, offset)
 	if err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	response := NewTagListResponse(tags)
+	tagResponses := NewTagListResponse(paginatedData.Tags)
+
+	totalPages := 0
+	if paginatedData.TotalCount > 0 {
+		totalPages = (paginatedData.TotalCount + limit - 1) / limit
+	}
+
+	response := PaginatedTagsResponse{
+		Data: tagResponses,
+		Pagination: TagPaginationMeta{
+			CurrentPage: page,
+			Limit:       limit,
+			TotalItems:  paginatedData.TotalCount,
+			TotalPages:  totalPages,
+		},
+	}
 
 	h.respondWithJSON(w, http.StatusOK, response)
 }

@@ -95,23 +95,39 @@ func (r *TagRepository) FetchTagsForTasks(ctx context.Context, taskIDs []int64) 
 	return result, nil
 }
 
-func (r *TagRepository) FindAllTags(ctx context.Context) ([]domain.Tag, error) {
-	query := `SELECT name, is_system FROM tags ORDER BY is_system DESC, name ASC`
-	rows, err := r.db.QueryContext(ctx, query)
+func (r *TagRepository) FindAllTags(ctx context.Context, limit, offset int) ([]domain.Tag, int, error) {
+	query := `SELECT name, count(*) OVER() 
+	          FROM tags 
+	          ORDER BY name ASC 
+	          LIMIT $1 OFFSET $2`
+
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var tags []domain.Tag
+	totalCount := 0
+
 	for rows.Next() {
-		var t domain.Tag
-		if err := rows.Scan(&t.Name, &t.IsSystem); err != nil {
-			return nil, err
+		var name string
+		if err := rows.Scan(&name, &totalCount); err != nil {
+			return nil, 0, err
 		}
-		tags = append(tags, t)
+
+		tag, err := domain.NewTag(name)
+		if err != nil {
+			return nil, 0, err
+		}
+		tags = append(tags, tag)
 	}
-	return tags, nil
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	return tags, totalCount, nil
 }
 
 func (r *TagRepository) DeleteTagFromRegistry(ctx context.Context, tagName string) error {

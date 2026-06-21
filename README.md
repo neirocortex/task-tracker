@@ -48,48 +48,44 @@ bash
 
 После успешного запуска API доступно по адресу `http://localhost:8080`. Вы можете протестировать эндпоинты через любой HTTP-клиент (Postman, Insomnia) или через терминал с помощью `curl`.
 
-### 1\. Создание новой задачи (POST)
+#### 1. Создание новой задачи (POST)
+```bash
+curl -X POST http://localhost:8080/api/v1/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Обход палаты №4",
+    "description": "Проверить состояние пациентов после утренней операции",
+    "due_date": "2026-12-31T10:00:00Z"
+  }'
+```
 
-bash
+#### 2. Получение списка задач с фильтрацией и пагинацией (GET)
+*Запрос возвращает задачи постранично в объекте `data` вместе с метаданными `pagination`.*
+```bash
+curl "http://localhost:8080/api/v1/tasks?status=NEW&due_date_from=2026-01-01T00:00:00Z&page=1&limit=20"
+```
 
-    curl -X POST http://localhost:8080/api/v1/tasks \
-      -H "Content-Type: application/json" \
-      -d '{
-        "title": "Обход палаты №4",
-        "description": "Проверить состояние пациентов после утренней операции",
-        "due_date": "2026-12-31T10:00:00Z"
-      }'
+#### 3. Получение задачи по ID (GET)
+```bash
+curl http://localhost:8080/api/v1/tasks/1
+```
 
-### 2\. Получение списка задач с фильтрацией (GET)
+#### 4. Обновление задачи (PUT)
+```bash
+curl -X PUT http://localhost:8080/api/v1/tasks/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Обход палаты №4 (Срочно)",
+    "description": "Проверить состояние пациентов после операции и обновить карты",
+    "due_date": "2026-12-31T12:00:00Z",
+    "status": "IN_PROGRESS"
+  }'
+```
 
-bash
-
-    curl "http://localhost:8080/api/v1/tasks?status=NEW&due_date_from=2026-01-01T00:00:00Z"
-
-### 3\. Получение задачи по ID (GET)
-
-bash
-
-    curl http://localhost:8080/api/v1/tasks/1
-
-### 4\. Обновление задачи (PUT)
-
-bash
-
-    curl -X PUT http://localhost:8080/api/v1/tasks/1 \
-      -H "Content-Type: application/json" \
-      -d '{
-        "title": "Обход палаты №4 (Срочно)",
-        "description": "Проверить состояние пациентов после операции и обновить карты",
-        "due_date": "2026-12-31T12:00:00Z",
-        "status": "IN_PROGRESS"
-      }'
-
-### 5\. Удаление задачи (DELETE)
-
-bash
-
-    curl -X DELETE http://localhost:8080/api/v1/tasks/1
+#### 5. Удаление задачи (DELETE)
+```bash
+curl -X DELETE http://localhost:8080/api/v1/tasks/1
+```
 
 * * *
 
@@ -152,7 +148,7 @@ curl "http://localhost:8080/api/v1/tasks?status=IN_PROGRESS"
 
 #### Б. Администрирование независимого справочника тегов
 
-##### 4. Добавление нового кастомного тега в справочник МИС (POST)
+#### 4. Добавление нового кастомного тега в справочник МИС (POST)
 ```bash
 curl -X POST http://localhost:8080/api/v1/tags \
   -H "Content-Type: application/json" \
@@ -161,14 +157,14 @@ curl -X POST http://localhost:8080/api/v1/tags \
   }'
 ```
 
-##### 5. Получение полного справочника тегов для интерфейса (GET)
-Используется фронтендом для инициализации ComboBox форм. Позволяет UI блокировать кнопку «Удалить» для системных тегов на основе флага `is_system`.
+#### 5. Получение справочника тегов с пагинацией (GET)
+*Используется фронтендом для инициализации ComboBox форм. Возвращает страницу тегов в объекте `data` вместе с метаданными `pagination`. Позволяет UI блокировать кнопку «Удалить» для системных тегов на основе флага `is_system`.*
 ```bash
-curl http://localhost:8080/api/v1/tags
+curl "http://localhost:8080/api/v1/tags?page=1&limit=20"
 ```
 
-##### 6. Каскадное переименование тега в справочнике (PUT)
-Изменение имени автоматически обновит текстовый маркер во всех связанных задачах.
+#### 6. Каскадное переименование тега в справочнике (PUT)
+*Изменение имени автоматически обновит текстовый маркер во всех связанных задачах силами СУБД (ON UPDATE CASCADE).*
 ```bash
 curl -X PUT http://localhost:8080/api/v1/tags/Лор \
   -H "Content-Type: application/json" \
@@ -177,13 +173,13 @@ curl -X PUT http://localhost:8080/api/v1/tags/Лор \
   }'
 ```
 
-##### 7. Удаление кастомного тега из системы (DELETE)
+#### 7. Удаление кастомного тега из системы (DELETE)
 ```bash
 curl -X DELETE http://localhost:8080/api/v1/tags/Оториноларинголог
 ```
 
-##### 7. Проверка защиты системных тегов (DELETE)
-Попытка удалить защищенный маркер вернет ошибку на уровне бизнес-логики со статусом `403 Forbidden`.
+#### 8. Проверка защиты системных тегов (DELETE)
+*Попытка удалить защищенный маркер вернет ошибку на уровне бизнес-логики со статусом `403 Forbidden`.*
 ```bash
 curl -i -X DELETE http://localhost:8080/api/v1/tags/операции
 ```

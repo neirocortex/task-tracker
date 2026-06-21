@@ -69,15 +69,32 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	req := ParseGetTasksRequest(r)
 
-	tasks, err := h.listTasksQ.Execute(r.Context(), req.ToDomainFilter())
+	filter := req.ToDomainFilter()
+
+	paginatedData, err := h.listTasksQ.Execute(r.Context(), filter)
 	if err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	response := make([]TaskResponse, 0, len(tasks))
-	for _, t := range tasks {
-		response = append(response, NewTaskResponse(&t))
+	taskResponses := make([]TaskResponse, 0, len(paginatedData.Tasks))
+	for _, t := range paginatedData.Tasks {
+		taskResponses = append(taskResponses, NewTaskResponse(&t))
+	}
+
+	totalPages := 0
+	if paginatedData.TotalCount > 0 {
+		totalPages = (paginatedData.TotalCount + req.Limit - 1) / req.Limit
+	}
+
+	response := PaginatedResponse{
+		Data: taskResponses,
+		Pagination: PaginationMetadata{
+			CurrentPage: req.Page,
+			Limit:       req.Limit,
+			TotalItems:  paginatedData.TotalCount,
+			TotalPages:  totalPages,
+		},
 	}
 	h.respondWithJSON(w, http.StatusOK, response)
 }

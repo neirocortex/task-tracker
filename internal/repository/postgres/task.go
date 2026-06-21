@@ -45,8 +45,9 @@ func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*domain.Task, e
 }
 
 // TaskViewer
-func (r *TaskRepository) GetList(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, error) {
-	query := `SELECT id, title, description, due_date, status, created_at, updated_at FROM tasks WHERE 1=1`
+func (r *TaskRepository) GetList(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, int, error) {
+	query := `SELECT id, title, description, due_date, status, created_at, updated_at, count(*) OVER() 
+	          FROM tasks WHERE 1=1`
 	var args []interface{}
 	argCount := 1
 
@@ -66,23 +67,28 @@ func (r *TaskRepository) GetList(ctx context.Context, filter domain.TaskFilter) 
 		argCount++
 	}
 
-	query += " ORDER BY due_date ASC"
+	query += fmt.Sprintf(" ORDER BY due_date ASC, id ASC LIMIT $%d OFFSET $%d", argCount, argCount+1)
+	args = append(args, filter.Limit, filter.Offset)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var tasks []domain.Task
+	totalCount := 0
+
 	for rows.Next() {
 		var t domain.Task
-		if err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Status, &t.CreatedAt, &t.UpdatedAt); err != nil {
-			return nil, err
+		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Status, &t.CreatedAt, &t.UpdatedAt, &totalCount)
+		if err != nil {
+			return nil, 0, err
 		}
 		tasks = append(tasks, t)
 	}
-	return tasks, rows.Err()
+
+	return tasks, totalCount, rows.Err()
 }
 
 // TaskModifier

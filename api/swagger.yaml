@@ -37,8 +37,8 @@ paths:
           description: Внутренняя ошибка сервера
 
     get:
-      summary: Получить список задач с фильтрацией
-      description: Возвращает отсортированный по дате выполнения (due_date) список задач, соответствующих фильтрам. Каждая задача возвращается со своими тегами.
+      summary: Получить список задач с фильтрацией и пагинацией
+      description: Возвращает отсортированный по дате выполнения (due_date) список задач, соответствующих фильтрам и параметрам пагинации. Каждая задача возвращается со своими тегами.
       parameters:
         -
           name: status
@@ -65,15 +65,34 @@ paths:
             type: string
             format: date-time
             example: '2026-06-19T23:59:59Z'
+        -
+          name: page
+          in: query
+          description: Номер запрашиваемой страницы (по умолчанию 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        -
+          name: limit
+          in: query
+          description: Количество элементов на страницу (по умолчанию 20, максимум 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
       responses:
         '200':
-          description: Список задач успешно получен
+          description: Страница списка задач успешно получена
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TaskResponse'
+                $ref: '#/components/schemas/PaginatedTasksResponse'
         '500':
           description: Внутренняя ошибка сервера
 
@@ -169,17 +188,37 @@ paths:
 
   /tags:
     get:
-      summary: Получить справочник тегов МИС
-      description: Возвращает полный список доступных тегов (включая системные) для инициализации интерфейса и ComboBox форм на фронтенде.
+      summary: Получить справочник тегов МИС с пагинацией
+      description: Возвращает список доступных тегов (включая системные) с поддержкой постраничного вывода для инициализации интерфейсов МИС.
+      parameters:
+        -
+          name: page
+          in: query
+          description: Номер запрашиваемой страницы (по умолчанию 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        -
+          name: limit
+          in: query
+          description: Количество элементов на страницу (по умолчанию 20, максимум 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
       responses:
         '200':
-          description: Успешный возврат справочника
+          description: Успешный возврат страницы справочника тегов
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TagResponse'
+                $ref: '#/components/schemas/PaginatedTagsResponse'
         '500':
           description: Внутренняя ошибка сервера
 
@@ -276,6 +315,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Внутренняя ошибка сервера
+
 components:
   schemas:
     TaskStatus:
@@ -358,7 +398,7 @@ components:
           type: array
           description: Список объектов тегов с их метаданными
           items:
-            $ref: '#/components/schemas/TagResponse'
+            $ref: '#/components/schemas/TagStr'
 
     TagCreateRequest:
       type: object
@@ -390,9 +430,66 @@ components:
           type: boolean
           example: true
 
+    TagStr:
+      type: string
+      example: "Лор"
+
     ErrorResponse:
       type: object
       properties:
         error:
           type: string
           example: 'task not found'
+
+    PaginationMetadata:
+      type: object
+      required:
+        - current_page
+        - limit
+        - total_items
+        - total_pages
+      properties:
+        current_page:
+          type: integer
+          description: Номер текущей страницы
+          example: 1
+        limit:
+          type: integer
+          description: Количество элементов на одной странице
+          example: 20
+        total_items:
+          type: integer
+          description: Общее количество элементов во всей базе данных по заданному фильтру
+          example: 142
+        total_pages:
+          type: integer
+          description: Общее количество доступных страниц
+          example: 8
+
+    PaginatedTasksResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          description: Массив задач на текущей странице
+          items:
+            $ref: '#/components/schemas/TaskResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginatedTagsResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          description: Массив тегов на текущей странице
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
