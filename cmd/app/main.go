@@ -48,21 +48,30 @@ func main() {
 
 	// clean architecture layers dependency injection
 	// repository
-	repository := repositoryPostgres.NewTaskRepository(db)
+	taskRepository := repositoryPostgres.NewTaskRepository(db)
+	tagRepository := repositoryPostgres.NewTagRepository(db)
 
 	// usecase
-	createCmd := usecase.NewCreateTaskCommand(repository)
-	updateCmd := usecase.NewUpdateTaskCommand(repository)
-	deleteCmd := usecase.NewDeleteTaskCommand(repository)
-	getTaskQ := usecase.NewGetTaskByIDQuery(repository)
-	listTasksQ := usecase.NewListTasksQuery(repository)
+	taskCreateCmd := usecase.NewCreateTaskCommand(taskRepository, tagRepository)
+	taskUpdateCmd := usecase.NewUpdateTaskCommand(taskRepository, tagRepository)
+	taskDeleteCmd := usecase.NewDeleteTaskCommand(taskRepository)
+	taskGetQ := usecase.NewGetTaskByIDQuery(taskRepository)
+	taskListQ := usecase.NewListTasksQuery(taskRepository, tagRepository)
+
+	tagCreateCmd := usecase.NewCreateTagCommand(tagRepository)
+	tagDeleteCmd := usecase.NewDeleteTagCommand(tagRepository)
+	tagListQ := usecase.NewGetTagsQuery(tagRepository)
 
 	// delivery
-	handler := deliveryHttp.NewTaskHandler(createCmd, updateCmd, deleteCmd, getTaskQ, listTasksQ)
+	mux := http.NewServeMux()
+
+	taskHandler := deliveryHttp.NewTaskHandler(taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskGetQ, taskListQ)
+	taskHandler.RegisterRoutes(mux)
+
+	tagHandler := deliveryHttp.NewTagHandler(tagCreateCmd, tagDeleteCmd, tagListQ)
+	tagHandler.RegisterRoutes(mux)
 
 	// start server
-	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux)
 	serverAddr := os.Getenv("SERVER_ADDRESS")
 	if serverAddr == "" {
 		serverAddr = ":8080"

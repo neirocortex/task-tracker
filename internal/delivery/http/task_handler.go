@@ -55,7 +55,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task := req.ToDomain()
-	if err := h.createCmd.Execute(r.Context(), task); err != nil {
+	if err := h.createCmd.Execute(r.Context(), task, req.Tags); err != nil {
 		if errors.Is(err, usecase.ErrInvalidDueDate) {
 			h.respondWithError(w, http.StatusBadRequest, err.Error())
 			return
@@ -114,7 +114,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.updateCmd.Execute(r.Context(), req.ToDomain(id)); err != nil {
+	if err := h.updateCmd.Execute(r.Context(), req.ToDomain(id), req.Tags); err != nil {
 		if errors.Is(err, postgres.ErrTaskNotFound) {
 			h.respondWithError(w, http.StatusNotFound, "task not found")
 			return

@@ -22,6 +22,7 @@ type Task struct {
 	Status      TaskStatus
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Tags        []Tag
 }
 
 type TaskFilter struct {

@@ -11,6 +11,7 @@ type CreateTaskRequest struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	DueDate     time.Time `json:"due_date"`
+	Tags        []string  `json:"tags"`
 }
 
 func (r *CreateTaskRequest) Validate() error {
@@ -25,6 +26,7 @@ func (r *CreateTaskRequest) ToDomain() *domain.Task {
 		Title:       r.Title,
 		Description: r.Description,
 		DueDate:     r.DueDate,
+		Tags:        []domain.Tag{},
 	}
 }
 
@@ -33,6 +35,7 @@ type UpdateTaskRequest struct {
 	Description string            `json:"description"`
 	DueDate     time.Time         `json:"due_date"`
 	Status      domain.TaskStatus `json:"status"`
+	Tags        []string          `json:"tags"`
 }
 
 func (r *UpdateTaskRequest) ToDomain(id int64) *domain.Task {
@@ -42,6 +45,7 @@ func (r *UpdateTaskRequest) ToDomain(id int64) *domain.Task {
 		Description: r.Description,
 		DueDate:     r.DueDate,
 		Status:      r.Status,
+		Tags:        []domain.Tag{},
 	}
 }
 
@@ -51,15 +55,25 @@ type TaskResponse struct {
 	Description string            `json:"description"`
 	DueDate     string            `json:"due_date"`
 	Status      domain.TaskStatus `json:"status"`
+	Tags        []TagResponse     `json:"tags"`
 }
 
 func NewTaskResponse(t *domain.Task) TaskResponse {
+	dtoTags := make([]TagResponse, len(t.Tags))
+	for i, tag := range t.Tags {
+		dtoTags[i] = TagResponse{
+			Name:     tag.Name,
+			IsSystem: tag.IsSystem,
+		}
+	}
+
 	return TaskResponse{
 		ID:          t.ID,
 		Title:       t.Title,
 		Description: t.Description,
 		DueDate:     t.DueDate.Format(time.RFC3339),
 		Status:      t.Status,
+		Tags:        dtoTags,
 	}
 }
 

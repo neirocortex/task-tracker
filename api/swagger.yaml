@@ -13,7 +13,7 @@ paths:
   /tasks:
     post:
       summary: Создать новую рабочую задачу
-      description: Создает задачу в системе. По умолчанию новой задаче присваивается статус `NEW`.
+      description: Создает задачу в системе. По умолчанию новой задаче присваивается статус `NEW`. Принимает список имен тегов.
       requestBody:
         required: true
         content:
@@ -38,7 +38,7 @@ paths:
 
     get:
       summary: Получить список задач с фильтрацией
-      description: Возвращает отсортированный по дате выполнения (due_date) список задач, соответствующих фильтрам.
+      description: Возвращает отсортированный по дате выполнения (due_date) список задач, соответствующих фильтрам. Каждая задача возвращается со своими тегами.
       parameters:
         -
           name: status
@@ -80,6 +80,7 @@ paths:
   /tasks/{id}:
     get:
       summary: Получить детальную информацию о задаче по ID
+      description: Возвращает полные данные задачи, включая список привязанных тегов с их метаданными.
       parameters:
         -
           name: id
@@ -107,6 +108,7 @@ paths:
 
     put:
       summary: Полное обновление существующей задачи
+      description: Обновляет поля задачи и полностью перезаписывает Many-to-Many связи с тегами. Несуществующие в справочнике теги тихо пропускаются (Silent Fail).
       parameters:
         -
           name: id
@@ -165,6 +167,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /tags:
+    get:
+      summary: Получить справочник тегов МИС
+      description: Возвращает полный список доступных тегов (включая системные) для инициализации интерфейса и ComboBox форм на фронтенде.
+      responses:
+        '200':
+          description: Успешный возврат справочника
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+
+    post:
+      summary: Создать новый кастомный тег в справочнике
+      description: Явное добавление нового тега администратором МИС. По умолчанию создается с флагом `is_system = false`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagCreateRequest'
+      responses:
+        '201':
+          description: Тег успешно создан в справочнике
+        '400':
+          description: Невалидные входные данные (например, пустое имя)
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /tags/{name}:
+    delete:
+      summary: Удалить кастомный тег из системы
+      description: Удаляет тег из справочника МИС. Связи с задачами вычищаются каскадно на уровне БД. Удаление системных тегов под запретом (возвращает 403).
+      parameters:
+        -
+          name: name
+          in: path
+          required: true
+          description: Уникальное имя тега для удаления
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Тег успешно удален из системы
+        '403':
+          description: Попытка удаления защищенного системного тега
+        '500':
+          description: Внутренняя ошибка сервера
+
 components:
   schemas:
     TaskStatus:
@@ -191,6 +246,12 @@ components:
           format: date-time
           description: Запланированное время выполнения задачи (обязательно в будущем)
           example: '2026-12-31T15:00:00Z'
+        tags:
+          type: array
+          description: Список имен тегов, выбранных на форме создания
+          items:
+            type: string
+          example: ['отчетность', 'операции']
 
     UpdateTaskRequest:
       type: object
@@ -211,6 +272,12 @@ components:
           example: '2026-12-31T16:00:00Z'
         status:
           $ref: '#/components/schemas/TaskStatus'
+        tags:
+          type: array
+          description: Список имен тегов, выбранных на форме редактирования (перетирает старые связи)
+          items:
+            type: string
+          example: ['операции', 'звонок']
 
     TaskResponse:
       type: object
@@ -231,6 +298,31 @@ components:
           example: '2026-12-31T15:00:00Z'
         status:
           $ref: '#/components/schemas/TaskStatus'
+        tags:
+          type: array
+          description: Список объектов тегов с их метаданными
+          items:
+            $ref: '#/components/schemas/TagResponse'
+
+    TagCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          example: 'консилиум'
+
+    TagResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 'отчетность'
+        is_system:
+          type: boolean
+          example: true
 
     ErrorResponse:
       type: object
