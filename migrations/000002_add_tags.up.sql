@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS task_tags (
 );
 
 CREATE INDEX IF NOT EXISTS idx_task_tags_tag ON task_tags(tag_name);
+CREATE INDEX IF NOT EXISTS idx_tags_is_system_name_cover ON tags (is_system DESC, name ASC);
 
 INSERT INTO tags (name, is_system) VALUES
 ('отчетность', TRUE),
