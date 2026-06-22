@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"taskTracker/internal/domain"
@@ -56,6 +57,7 @@ func (h *TagHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
+		slog.Error("internal error 1", "error", err)
 		return
 	}
 
@@ -82,6 +84,7 @@ func (h *TagHandler) GetTags(w http.ResponseWriter, r *http.Request) {
 	paginatedData, err := h.listQuery.Execute(r.Context(), limit, offset)
 	if err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
+		slog.Error("internal error 2", "error", err)
 		return
 	}
 
@@ -118,6 +121,7 @@ func (h *TagHandler) DeleteTag(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
+		slog.Error("internal error 3", "error", err)
 		return
 	}
 
@@ -154,6 +158,7 @@ func (h *TagHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 		}
 
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
+		slog.Error("internal error 4", "error", err)
 		return
 	}
 
@@ -164,7 +169,7 @@ func (h *TagHandler) respondWithError(w http.ResponseWriter, code int, msg strin
 	h.respondWithJSON(w, code, map[string]string{"error": msg})
 }
 
-func (h *TagHandler) respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+func (h *TagHandler) respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(payload)

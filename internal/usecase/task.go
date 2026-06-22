@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"taskTracker/internal/domain"
+	"time"
 )
 
 // solid isp/dip contracts with db
@@ -20,5 +21,13 @@ type TaskRemover interface {
 
 type TaskViewer interface {
 	GetByID(ctx context.Context, id int64) (*domain.Task, error)
-	GetList(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, int, error)
+	GetList(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, error)
+}
+
+type TaskExecutionViewer interface {
+	FetchExecutionsForPeriod(ctx context.Context, taskIDs []int64, from, to time.Time) (map[int64]map[string]domain.TaskStatus, error)
+}
+
+type TaskExecutionSaver interface {
+	SaveExecutionStatus(ctx context.Context, taskID int64, date time.Time, status domain.TaskStatus) error
 }

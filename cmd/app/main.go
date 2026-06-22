@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		//fail-fast
 		logger.Error("failed to open database connection", "error", err)
-		return
+		os.Exit(1)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -55,8 +55,9 @@ func main() {
 	taskCreateCmd := usecase.NewCreateTaskCommand(taskRepository, tagRepository)
 	taskUpdateCmd := usecase.NewUpdateTaskCommand(taskRepository, tagRepository)
 	taskDeleteCmd := usecase.NewDeleteTaskCommand(taskRepository)
-	taskGetQ := usecase.NewGetTaskByIDQuery(taskRepository)
-	taskListQ := usecase.NewListTasksQuery(taskRepository, tagRepository)
+	taskGetQ := usecase.NewGetTaskByIDQuery(taskRepository, tagRepository)
+	taskListQ := usecase.NewListTasksQuery(taskRepository, tagRepository, taskRepository)
+	recordExecCmd := usecase.NewRecordExecutionCommand(taskRepository)
 
 	tagCreateCmd := usecase.NewCreateTagCommand(tagRepository)
 	tagUpdateCmd := usecase.NewUpdateTagCommand(tagRepository)
@@ -66,7 +67,7 @@ func main() {
 	// delivery
 	mux := http.NewServeMux()
 
-	taskHandler := deliveryHttp.NewTaskHandler(taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskGetQ, taskListQ)
+	taskHandler := deliveryHttp.NewTaskHandler(taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskGetQ, taskListQ, recordExecCmd)
 	taskHandler.RegisterRoutes(mux)
 
 	tagHandler := deliveryHttp.NewTagHandler(tagCreateCmd, tagUpdateCmd, tagDeleteCmd, tagListQ)

@@ -9,15 +9,23 @@ import (
 
 // DTO objects for clean domain model
 type CreateTaskRequest struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	DueDate     time.Time `json:"due_date"`
-	Tags        []string  `json:"tags"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	DueDate     time.Time      `json:"due_date"`
+	Tags        []string       `json:"tags"`
+	Recurrence  *RecurrenceDTO `json:"recurrence,omitempty"`
 }
 
 func (r *CreateTaskRequest) Validate() error {
 	if r.Title == "" {
-		return stringError("title is required")
+		return domain.ErrTitleEmpty
+	}
+	if r.Recurrence != nil {
+		t := domain.RecurrenceType(r.Recurrence.Type)
+		if t != domain.RecurrenceDaily && t != domain.RecurrenceMonthly &&
+			t != domain.RecurrenceDates && t != domain.RecurrenceEven && t != domain.RecurrenceOdd {
+			return domain.ErrWrongRec
+		}
 	}
 	return nil
 }
@@ -28,6 +36,7 @@ func (r *CreateTaskRequest) ToDomain() *domain.Task {
 		Description: r.Description,
 		DueDate:     r.DueDate,
 		Tags:        []domain.Tag{},
+		Recurrence:  r.Recurrence.ToDomain(),
 	}
 }
 
@@ -37,6 +46,7 @@ type UpdateTaskRequest struct {
 	DueDate     time.Time         `json:"due_date"`
 	Status      domain.TaskStatus `json:"status"`
 	Tags        []string          `json:"tags"`
+	Recurrence  *RecurrenceDTO    `json:"recurrence,omitempty"`
 }
 
 func (r *UpdateTaskRequest) ToDomain(id int64) *domain.Task {
@@ -47,6 +57,7 @@ func (r *UpdateTaskRequest) ToDomain(id int64) *domain.Task {
 		DueDate:     r.DueDate,
 		Status:      r.Status,
 		Tags:        []domain.Tag{},
+		Recurrence:  r.Recurrence.ToDomain(),
 	}
 }
 
@@ -57,6 +68,7 @@ type TaskResponse struct {
 	DueDate     string            `json:"due_date"`
 	Status      domain.TaskStatus `json:"status"`
 	Tags        []string          `json:"tags"`
+	IsRecurring bool              `json:"is_recurring"`
 }
 
 type PaginatedResponse struct {
@@ -84,6 +96,7 @@ func NewTaskResponse(t *domain.Task) TaskResponse {
 		DueDate:     t.DueDate.Format(time.RFC3339),
 		Status:      t.Status,
 		Tags:        dtoTags,
+		IsRecurring: t.IsRecurring(),
 	}
 }
 
@@ -99,13 +112,11 @@ func ParseGetTasksRequest(r *http.Request) GetTasksRequest {
 	q := r.URL.Query()
 
 	page, _ := strconv.Atoi(q.Get("page"))
-
 	if page <= 0 {
 		page = 1
 	}
 
 	limit, _ := strconv.Atoi(q.Get("limit"))
-
 	if limit <= 0 {
 		limit = 20
 	} else if limit > 100 {
@@ -138,7 +149,3 @@ func (req GetTasksRequest) ToDomainFilter() domain.TaskFilter {
 
 	return filter
 }
-
-type stringError string
-
-func (e stringError) Error() string { return string(e) }

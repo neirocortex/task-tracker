@@ -13,7 +13,7 @@ paths:
   /tasks:
     post:
       summary: Создать новую рабочую задачу
-      description: Создает задачу в системе. По умолчанию новой задаче присваивается статус `NEW`. Принимает список имен тегов.
+      description: Создает задачу в системе (одиночную или периодический шаблон). По умолчанию новой задаче присваивается статус `NEW`. Принимает список имен тегов.
       requestBody:
         required: true
         content:
@@ -38,7 +38,7 @@ paths:
 
     get:
       summary: Получить список задач с фильтрацией и пагинацией
-      description: Возвращает отсортированный по дате выполнения (due_date) список задач, соответствующих фильтрам и параметрам пагинации. Каждая задача возвращается со своими тегами.
+      description: Возвращает отсортированный по дате выполнения (due_date) список обычных и виртуальных повторений периодических задач, соответствующих фильтрам и параметрам пагинации за указанный период. Каждая задача возвращается со своими тегами.
       parameters:
         -
           name: status
@@ -127,7 +127,7 @@ paths:
 
     put:
       summary: Полное обновление существующей задачи
-      description: Обновляет поля задачи и полностью перезаписывает Many-to-Many связи с тегами. Несуществующие в справочнике теги тихо пропускаются (Silent Fail).
+      description: Обновляет поля задачи, параметры её периодичности и полностью перезаписывает Many-to-Many связи с тегами. Несуществующие в справочнике теги тихо пропускаются (Silent Fail).
       parameters:
         -
           name: id
@@ -185,6 +185,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}/executions:
+    post:
+      summary: Отметить статус выполнения конкретного календарного дня задачи
+      description: Изолированное действие персонала МИС для фиксации факта выполнения периодической задачи на определенную дату без изменения основного шаблона.
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          description: Идентификатор периодической задачи-шаблона
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordExecutionRequest'
+      responses:
+        '200':
+          description: Статус дня успешно зафиксирован
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: execution_recorded
+        '400':
+          description: Некорректный JSON или невалидные параметры даты/статуса
+        '500':
+          description: Внутренняя ошибка сервера
 
   /tags:
     get:
@@ -340,7 +375,7 @@ components:
         due_date:
           type: string
           format: date-time
-          description: Запланированное время выполнения задачи (обязательно в будущем)
+          description: Планируемое время задачи / Старт расписания для периодических задач
           example: '2026-12-31T15:00:00Z'
         tags:
           type: array
@@ -348,6 +383,8 @@ components:
           items:
             type: string
           example: ['отчетность', 'операции']
+        recurrence:
+          $ref: '#/components/schemas/RecurrenceDTO'
 
     UpdateTaskRequest:
       type: object
@@ -374,6 +411,8 @@ components:
           items:
             type: string
           example: ['операции', 'звонок']
+        recurrence:
+          $ref: '#/components/schemas/RecurrenceDTO'
 
     TaskResponse:
       type: object
@@ -399,6 +438,49 @@ components:
           description: Список объектов тегов с их метаданными
           items:
             $ref: '#/components/schemas/TagStr'
+        is_recurring:
+          type: boolean
+          description: Флаг периодичности для отрисовки иконок повторения на фронтенде МИС
+          example: true
+
+    RecurrenceDTO:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [DAILY, MONTHLY, DATES, EVEN, ODD]
+          example: DAILY
+        interval:
+          type: integer
+          description: Интервал повторения в днях (для типа DAILY)
+          example: 1
+        day_of_month:
+          type: integer
+          description: Число месяца (для типа MONTHLY, от 1 до 31)
+          example: 15
+        specifics:
+          type: array
+          description: Набор конкретных изолированных дат (для типа DATES)
+          items:
+            type: string
+            format: date-time
+          example: ['2026-07-10T00:00:00Z', '2026-07-15T00:00:00Z']
+
+    RecordExecutionRequest:
+      type: object
+      required:
+        - date
+        - status
+      properties:
+        date:
+          type: string
+          format: date-time
+          description: Конкретная календарная дата выполнения виртуального экземпляра задачи
+          example: '2026-06-22T00:00:00Z'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
 
     TagCreateRequest:
       type: object
