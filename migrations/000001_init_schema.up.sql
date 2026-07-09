@@ -27,5 +27,5 @@ CREATE TABLE IF NOT EXISTS tasks (
     recurrence_specific_dates DATE[] DEFAULT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
-CREATE INDEX IF NOT EXISTS idx_tasks_recurring_templates ON tasks(due_date) WHERE recurrence_type IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_due_date_not_recurring ON tasks(due_date) WHERE recurrence_type IS NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_due_date_recurring ON tasks(due_date) WHERE recurrence_type IS NOT NULL;

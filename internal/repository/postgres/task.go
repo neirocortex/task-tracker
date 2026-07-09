@@ -108,27 +108,38 @@ func (r *TaskRepository) GetList(ctx context.Context, filter domain.TaskFilter) 
 		SELECT 
 			id, title, description, due_date, status, created_at, updated_at,
 			recurrence_type, recurrence_interval, recurrence_day_of_month, recurrence_specific_dates
-		FROM tasks 
-		WHERE 1=1`
-
+		FROM tasks`
 	var args []interface{}
 	argCount := 1
 
 	if filter.DueDateFrom != nil && filter.DueDateTo != nil {
-		query += fmt.Sprintf(` AND (
-			(recurrence_type IS NULL AND due_date >= $%d AND due_date <= $%d)
-			OR 
-			(recurrence_type IS NOT NULL AND due_date <= $%d)
-		)`, argCount, argCount+1, argCount+1)
-
+		queryNotReq := query + fmt.Sprintf(` WHERE recurrence_type IS NULL AND due_date >= $%d AND due_date <= $%d`, argCount, argCount+1)
 		args = append(args, *filter.DueDateFrom, *filter.DueDateTo)
 		argCount += 2
-	}
 
-	if filter.Status != nil {
-		query += fmt.Sprintf(" AND status = $%d", argCount)
-		args = append(args, *filter.Status)
+		if filter.Status != nil {
+			queryNotReq += fmt.Sprintf(" AND status = $%d", argCount)
+			args = append(args, *filter.Status)
+			argCount++
+		}
+
+		queryReq := query + fmt.Sprintf(` WHERE recurrence_type IS NOT NULL AND due_date <= $%d`, argCount)
+		args = append(args, *filter.DueDateTo)
 		argCount++
+
+		if filter.Status != nil {
+			queryReq += fmt.Sprintf(" AND status = $%d", argCount)
+			args = append(args, *filter.Status)
+			argCount++
+		}
+
+		query = queryNotReq + ` UNION ALL ` + queryReq
+	} else {
+		if filter.Status != nil {
+			query += fmt.Sprintf(" WHERE status = $%d", argCount)
+			args = append(args, *filter.Status)
+			argCount++
+		}
 	}
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
