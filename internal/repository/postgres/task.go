@@ -101,7 +101,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*domain.Task, e
 }
 
 // TaskViewer
-func (r *TaskRepository) GetList(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, error) {
+func (r *TaskRepository) GetList(ctx context.Context, filter *domain.TaskFilter) ([]domain.Task, error) {
 	query := `
 		SELECT 
 			id, title, description, due_date, status, created_at, updated_at,

@@ -21,7 +21,7 @@ type TaskRemover interface {
 
 type TaskViewer interface {
 	GetByID(ctx context.Context, id int64) (*domain.Task, error)
-	GetList(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, error)
+	GetList(ctx context.Context, filter *domain.TaskFilter) ([]domain.Task, error)
 }
 
 type TaskExecutionViewer interface {

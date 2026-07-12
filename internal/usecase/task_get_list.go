@@ -27,7 +27,7 @@ type PaginatedTasks struct {
 	TotalCount int
 }
 
-func (q *ListTasksQuery) Execute(ctx context.Context, filter domain.TaskFilter) (PaginatedTasks, error) {
+func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter) (PaginatedTasks, error) {
 	baseTasks, err := q.taskRepo.GetList(ctx, filter)
 	if err != nil {
 		return PaginatedTasks{}, err
@@ -94,19 +94,25 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter domain.TaskFilter) 
 		return virtualTasks[i].DueDate.Before(virtualTasks[j].DueDate)
 	})
 	totalCount := len(virtualTasks)
-	offset := filter.Offset
-	limit := filter.Limit
-	if limit <= 0 {
-		limit = 20
+
+	if filter.Limit <= 0 {
+		filter.Limit = 20
 	}
-	if offset >= totalCount {
+
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+
+	if filter.Offset >= totalCount {
 		return PaginatedTasks{Tasks: []domain.Task{}, TotalCount: totalCount}, nil
 	}
-	end := offset + limit
+
+	end := filter.Offset + filter.Limit
 	if end > totalCount {
 		end = totalCount
 	}
-	paginatedVirtualTasks := virtualTasks[offset:end]
+
+	paginatedVirtualTasks := virtualTasks[filter.Offset:end]
 	for i := range paginatedVirtualTasks {
 		if tags, exists := tagsMap[paginatedVirtualTasks[i].ID]; exists {
 			paginatedVirtualTasks[i].Tags = tags

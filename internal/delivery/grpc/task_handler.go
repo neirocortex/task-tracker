@@ -135,7 +135,7 @@ func toDomainTaskUpdate(task *taskv1.UpdateTaskRequest) *domain.Task {
 	return domainTask
 }
 
-func toDomainFilter(req *taskv1.GetTasksRequest) domain.TaskFilter {
+func toDomainFilter(req *taskv1.GetTasksRequest) *domain.TaskFilter {
 	filter := domain.TaskFilter{}
 	if req.Status != taskv1.TaskStatus_TASK_STATUS_UNSPECIFIED {
 		s := pbToDomainStatus[req.Status]
@@ -150,7 +150,15 @@ func toDomainFilter(req *taskv1.GetTasksRequest) domain.TaskFilter {
 		filter.DueDateTo = &t
 	}
 
-	return filter
+	filter.Limit = int(req.Limit)
+
+	if req.Page > 0 {
+		filter.Offset = int((req.Page - 1) * req.Limit)
+	} else {
+		filter.Offset = 0
+	}
+
+	return &filter
 }
 
 func (h *TaskHandler) CreateTask(ctx context.Context, req *taskv1.CreateTaskRequest) (*taskv1.CreateTaskResponse, error) {
@@ -229,17 +237,20 @@ func (h *TaskHandler) GetTasks(ctx context.Context, req *taskv1.GetTasksRequest)
 		tasksPb[i] = toPbTask(&paginatedData.Tasks[i])
 	}
 
-	var totalPages int64
 	var totalCount int64 = int64(paginatedData.TotalCount)
-	if paginatedData.TotalCount > 0 {
-		totalPages = (totalCount + req.Limit - 1) / req.Limit
+	var limit int64 = int64(filter.Limit)
+	var page int64 = int64(filter.Offset/filter.Limit + 1)
+
+	var totalPages int64
+	if totalCount > 0 {
+		totalPages = (totalCount + limit - 1) / limit
 	}
 
 	response := &taskv1.GetTasksResponse{
 		Data: tasksPb,
 		Pagination: &taskv1.PaginationMetadata{
-			CurrentPage: req.Page,
-			Limit:       req.Limit,
+			CurrentPage: page,
+			Limit:       limit,
 			TotalItems:  totalCount,
 			TotalPages:  totalPages,
 		},

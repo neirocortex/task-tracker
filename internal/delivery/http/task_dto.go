@@ -127,7 +127,7 @@ func ParseGetTasksRequest(r *http.Request) GetTasksRequest {
 	}
 }
 
-func (req GetTasksRequest) ToDomainFilter() domain.TaskFilter {
+func (req GetTasksRequest) ToDomainFilter() *domain.TaskFilter {
 	filter := domain.TaskFilter{}
 	if req.Status != "" {
 		s := domain.TaskStatus(req.Status)
@@ -140,7 +140,11 @@ func (req GetTasksRequest) ToDomainFilter() domain.TaskFilter {
 		filter.DueDateTo = &t
 	}
 	filter.Limit = req.Limit
-	filter.Offset = (req.Page - 1) * req.Limit
+	if req.Page > 0 {
+		filter.Offset = (req.Page - 1) * req.Limit
+	} else {
+		filter.Offset = 0
+	}
 
-	return filter
+	return &filter
 }
