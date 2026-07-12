@@ -257,3 +257,26 @@ func (h *TaskHandler) GetTasks(ctx context.Context, req *taskv1.GetTasksRequest)
 	}
 	return response, nil
 }
+
+func (h *TaskHandler) RecordExecution(ctx context.Context, req *taskv1.RecordExecutionRequest) (*taskv1.RecordExecutionResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
+	}
+
+	date := req.Date.AsTime()
+	if date.IsZero() {
+		return nil, mapDomainErrorToGRPC(domain.ErrDateReq)
+	}
+
+	status, ok := pbToDomainStatus[req.Status]
+	if !ok {
+		return nil, mapDomainErrorToGRPC(domain.ErrStatusReq)
+	}
+
+	err := h.recordExecCmd.Execute(ctx, req.Id, date, status)
+	if err != nil {
+		return nil, mapDomainErrorToGRPC(err)
+	}
+
+	return &taskv1.RecordExecutionResponse{}, nil
+}

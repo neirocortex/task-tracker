@@ -907,6 +907,102 @@ func (x *GetTasksResponse) GetPagination() *PaginationMetadata {
 	return nil
 }
 
+type RecordExecutionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Date          *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date,proto3" json:"date,omitempty"`
+	Status        TaskStatus             `protobuf:"varint,3,opt,name=status,proto3,enum=taskTracker.v1.TaskStatus" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordExecutionRequest) Reset() {
+	*x = RecordExecutionRequest{}
+	mi := &file_proto_task_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordExecutionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordExecutionRequest) ProtoMessage() {}
+
+func (x *RecordExecutionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_task_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordExecutionRequest.ProtoReflect.Descriptor instead.
+func (*RecordExecutionRequest) Descriptor() ([]byte, []int) {
+	return file_proto_task_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RecordExecutionRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *RecordExecutionRequest) GetDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Date
+	}
+	return nil
+}
+
+func (x *RecordExecutionRequest) GetStatus() TaskStatus {
+	if x != nil {
+		return x.Status
+	}
+	return TaskStatus_TASK_STATUS_UNSPECIFIED
+}
+
+type RecordExecutionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordExecutionResponse) Reset() {
+	*x = RecordExecutionResponse{}
+	mi := &file_proto_task_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordExecutionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordExecutionResponse) ProtoMessage() {}
+
+func (x *RecordExecutionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_task_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordExecutionResponse.ProtoReflect.Descriptor instead.
+func (*RecordExecutionResponse) Descriptor() ([]byte, []int) {
+	return file_proto_task_proto_rawDescGZIP(), []int{14}
+}
+
 var File_proto_task_proto protoreflect.FileDescriptor
 
 const file_proto_task_proto_rawDesc = "" +
@@ -971,7 +1067,12 @@ const file_proto_task_proto_rawDesc = "" +
 	"\x04data\x18\x01 \x03(\v2\x14.taskTracker.v1.TaskR\x04data\x12B\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\".taskTracker.v1.PaginationMetadataR\n" +
-	"pagination*\x8b\x01\n" +
+	"pagination\"\x8c\x01\n" +
+	"\x16RecordExecutionRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12.\n" +
+	"\x04date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\x122\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1a.taskTracker.v1.TaskStatusR\x06status\"\x19\n" +
+	"\x17RecordExecutionResponse*\x8b\x01\n" +
 	"\n" +
 	"TaskStatus\x12\x1b\n" +
 	"\x17TASK_STATUS_UNSPECIFIED\x10\x00\x12\x13\n" +
@@ -985,7 +1086,7 @@ const file_proto_task_proto_rawDesc = "" +
 	"\x17RECURRENCE_TYPE_MONTHLY\x10\x02\x12\x19\n" +
 	"\x15RECURRENCE_TYPE_DATES\x10\x03\x12\x18\n" +
 	"\x14RECURRENCE_TYPE_EVEN\x10\x04\x12\x17\n" +
-	"\x13RECURRENCE_TYPE_ODD\x10\x052\xb3\x03\n" +
+	"\x13RECURRENCE_TYPE_ODD\x10\x052\x97\x04\n" +
 	"\vTaskService\x12S\n" +
 	"\n" +
 	"CreateTask\x12!.taskTracker.v1.CreateTaskRequest\x1a\".taskTracker.v1.CreateTaskResponse\x12S\n" +
@@ -994,7 +1095,8 @@ const file_proto_task_proto_rawDesc = "" +
 	"\n" +
 	"DeleteTask\x12!.taskTracker.v1.DeleteTaskRequest\x1a\".taskTracker.v1.DeleteTaskResponse\x12V\n" +
 	"\vGetTaskByID\x12\".taskTracker.v1.GetTaskByIDRequest\x1a#.taskTracker.v1.GetTaskByIDResponse\x12M\n" +
-	"\bGetTasks\x12\x1f.taskTracker.v1.GetTasksRequest\x1a .taskTracker.v1.GetTasksResponseB\rZ\v./v1;taskv1b\x06proto3"
+	"\bGetTasks\x12\x1f.taskTracker.v1.GetTasksRequest\x1a .taskTracker.v1.GetTasksResponse\x12b\n" +
+	"\x0fRecordExecution\x12&.taskTracker.v1.RecordExecutionRequest\x1a'.taskTracker.v1.RecordExecutionResponseB\rZ\v./v1;taskv1b\x06proto3"
 
 var (
 	file_proto_task_proto_rawDescOnce sync.Once
@@ -1009,57 +1111,63 @@ func file_proto_task_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_task_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_proto_task_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_proto_task_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_proto_task_proto_goTypes = []any{
-	(TaskStatus)(0),               // 0: taskTracker.v1.TaskStatus
-	(RecurrenceType)(0),           // 1: taskTracker.v1.RecurrenceType
-	(*TaskRecurrence)(nil),        // 2: taskTracker.v1.TaskRecurrence
-	(*Task)(nil),                  // 3: taskTracker.v1.Task
-	(*CreateTaskRequest)(nil),     // 4: taskTracker.v1.CreateTaskRequest
-	(*CreateTaskResponse)(nil),    // 5: taskTracker.v1.CreateTaskResponse
-	(*UpdateTaskRequest)(nil),     // 6: taskTracker.v1.UpdateTaskRequest
-	(*UpdateTaskResponse)(nil),    // 7: taskTracker.v1.UpdateTaskResponse
-	(*DeleteTaskRequest)(nil),     // 8: taskTracker.v1.DeleteTaskRequest
-	(*DeleteTaskResponse)(nil),    // 9: taskTracker.v1.DeleteTaskResponse
-	(*GetTaskByIDRequest)(nil),    // 10: taskTracker.v1.GetTaskByIDRequest
-	(*GetTaskByIDResponse)(nil),   // 11: taskTracker.v1.GetTaskByIDResponse
-	(*PaginationMetadata)(nil),    // 12: taskTracker.v1.PaginationMetadata
-	(*GetTasksRequest)(nil),       // 13: taskTracker.v1.GetTasksRequest
-	(*GetTasksResponse)(nil),      // 14: taskTracker.v1.GetTasksResponse
-	(*timestamppb.Timestamp)(nil), // 15: google.protobuf.Timestamp
+	(TaskStatus)(0),                 // 0: taskTracker.v1.TaskStatus
+	(RecurrenceType)(0),             // 1: taskTracker.v1.RecurrenceType
+	(*TaskRecurrence)(nil),          // 2: taskTracker.v1.TaskRecurrence
+	(*Task)(nil),                    // 3: taskTracker.v1.Task
+	(*CreateTaskRequest)(nil),       // 4: taskTracker.v1.CreateTaskRequest
+	(*CreateTaskResponse)(nil),      // 5: taskTracker.v1.CreateTaskResponse
+	(*UpdateTaskRequest)(nil),       // 6: taskTracker.v1.UpdateTaskRequest
+	(*UpdateTaskResponse)(nil),      // 7: taskTracker.v1.UpdateTaskResponse
+	(*DeleteTaskRequest)(nil),       // 8: taskTracker.v1.DeleteTaskRequest
+	(*DeleteTaskResponse)(nil),      // 9: taskTracker.v1.DeleteTaskResponse
+	(*GetTaskByIDRequest)(nil),      // 10: taskTracker.v1.GetTaskByIDRequest
+	(*GetTaskByIDResponse)(nil),     // 11: taskTracker.v1.GetTaskByIDResponse
+	(*PaginationMetadata)(nil),      // 12: taskTracker.v1.PaginationMetadata
+	(*GetTasksRequest)(nil),         // 13: taskTracker.v1.GetTasksRequest
+	(*GetTasksResponse)(nil),        // 14: taskTracker.v1.GetTasksResponse
+	(*RecordExecutionRequest)(nil),  // 15: taskTracker.v1.RecordExecutionRequest
+	(*RecordExecutionResponse)(nil), // 16: taskTracker.v1.RecordExecutionResponse
+	(*timestamppb.Timestamp)(nil),   // 17: google.protobuf.Timestamp
 }
 var file_proto_task_proto_depIdxs = []int32{
 	1,  // 0: taskTracker.v1.TaskRecurrence.type:type_name -> taskTracker.v1.RecurrenceType
-	15, // 1: taskTracker.v1.TaskRecurrence.specifics:type_name -> google.protobuf.Timestamp
-	15, // 2: taskTracker.v1.Task.due_date:type_name -> google.protobuf.Timestamp
+	17, // 1: taskTracker.v1.TaskRecurrence.specifics:type_name -> google.protobuf.Timestamp
+	17, // 2: taskTracker.v1.Task.due_date:type_name -> google.protobuf.Timestamp
 	0,  // 3: taskTracker.v1.Task.status:type_name -> taskTracker.v1.TaskStatus
-	15, // 4: taskTracker.v1.CreateTaskRequest.due_date:type_name -> google.protobuf.Timestamp
+	17, // 4: taskTracker.v1.CreateTaskRequest.due_date:type_name -> google.protobuf.Timestamp
 	2,  // 5: taskTracker.v1.CreateTaskRequest.recurrence:type_name -> taskTracker.v1.TaskRecurrence
 	3,  // 6: taskTracker.v1.CreateTaskResponse.task:type_name -> taskTracker.v1.Task
-	15, // 7: taskTracker.v1.UpdateTaskRequest.due_date:type_name -> google.protobuf.Timestamp
+	17, // 7: taskTracker.v1.UpdateTaskRequest.due_date:type_name -> google.protobuf.Timestamp
 	0,  // 8: taskTracker.v1.UpdateTaskRequest.status:type_name -> taskTracker.v1.TaskStatus
 	2,  // 9: taskTracker.v1.UpdateTaskRequest.recurrence:type_name -> taskTracker.v1.TaskRecurrence
 	3,  // 10: taskTracker.v1.GetTaskByIDResponse.task:type_name -> taskTracker.v1.Task
 	0,  // 11: taskTracker.v1.GetTasksRequest.status:type_name -> taskTracker.v1.TaskStatus
-	15, // 12: taskTracker.v1.GetTasksRequest.due_date_from:type_name -> google.protobuf.Timestamp
-	15, // 13: taskTracker.v1.GetTasksRequest.due_date_to:type_name -> google.protobuf.Timestamp
+	17, // 12: taskTracker.v1.GetTasksRequest.due_date_from:type_name -> google.protobuf.Timestamp
+	17, // 13: taskTracker.v1.GetTasksRequest.due_date_to:type_name -> google.protobuf.Timestamp
 	3,  // 14: taskTracker.v1.GetTasksResponse.data:type_name -> taskTracker.v1.Task
 	12, // 15: taskTracker.v1.GetTasksResponse.pagination:type_name -> taskTracker.v1.PaginationMetadata
-	4,  // 16: taskTracker.v1.TaskService.CreateTask:input_type -> taskTracker.v1.CreateTaskRequest
-	6,  // 17: taskTracker.v1.TaskService.UpdateTask:input_type -> taskTracker.v1.UpdateTaskRequest
-	8,  // 18: taskTracker.v1.TaskService.DeleteTask:input_type -> taskTracker.v1.DeleteTaskRequest
-	10, // 19: taskTracker.v1.TaskService.GetTaskByID:input_type -> taskTracker.v1.GetTaskByIDRequest
-	13, // 20: taskTracker.v1.TaskService.GetTasks:input_type -> taskTracker.v1.GetTasksRequest
-	5,  // 21: taskTracker.v1.TaskService.CreateTask:output_type -> taskTracker.v1.CreateTaskResponse
-	7,  // 22: taskTracker.v1.TaskService.UpdateTask:output_type -> taskTracker.v1.UpdateTaskResponse
-	9,  // 23: taskTracker.v1.TaskService.DeleteTask:output_type -> taskTracker.v1.DeleteTaskResponse
-	11, // 24: taskTracker.v1.TaskService.GetTaskByID:output_type -> taskTracker.v1.GetTaskByIDResponse
-	14, // 25: taskTracker.v1.TaskService.GetTasks:output_type -> taskTracker.v1.GetTasksResponse
-	21, // [21:26] is the sub-list for method output_type
-	16, // [16:21] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	17, // 16: taskTracker.v1.RecordExecutionRequest.date:type_name -> google.protobuf.Timestamp
+	0,  // 17: taskTracker.v1.RecordExecutionRequest.status:type_name -> taskTracker.v1.TaskStatus
+	4,  // 18: taskTracker.v1.TaskService.CreateTask:input_type -> taskTracker.v1.CreateTaskRequest
+	6,  // 19: taskTracker.v1.TaskService.UpdateTask:input_type -> taskTracker.v1.UpdateTaskRequest
+	8,  // 20: taskTracker.v1.TaskService.DeleteTask:input_type -> taskTracker.v1.DeleteTaskRequest
+	10, // 21: taskTracker.v1.TaskService.GetTaskByID:input_type -> taskTracker.v1.GetTaskByIDRequest
+	13, // 22: taskTracker.v1.TaskService.GetTasks:input_type -> taskTracker.v1.GetTasksRequest
+	15, // 23: taskTracker.v1.TaskService.RecordExecution:input_type -> taskTracker.v1.RecordExecutionRequest
+	5,  // 24: taskTracker.v1.TaskService.CreateTask:output_type -> taskTracker.v1.CreateTaskResponse
+	7,  // 25: taskTracker.v1.TaskService.UpdateTask:output_type -> taskTracker.v1.UpdateTaskResponse
+	9,  // 26: taskTracker.v1.TaskService.DeleteTask:output_type -> taskTracker.v1.DeleteTaskResponse
+	11, // 27: taskTracker.v1.TaskService.GetTaskByID:output_type -> taskTracker.v1.GetTaskByIDResponse
+	14, // 28: taskTracker.v1.TaskService.GetTasks:output_type -> taskTracker.v1.GetTasksResponse
+	16, // 29: taskTracker.v1.TaskService.RecordExecution:output_type -> taskTracker.v1.RecordExecutionResponse
+	24, // [24:30] is the sub-list for method output_type
+	18, // [18:24] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_proto_task_proto_init() }
@@ -1073,7 +1181,7 @@ func file_proto_task_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_task_proto_rawDesc), len(file_proto_task_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

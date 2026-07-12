@@ -98,10 +98,19 @@ message GetTasksResponse {
   PaginationMetadata pagination = 2;
 }
 
+message RecordExecutionRequest {
+  int64 id = 1;
+  google.protobuf.Timestamp date = 2;
+  TaskStatus status = 3;
+}
+
+message RecordExecutionResponse {}
+
 service TaskService {
-  rpc CreateTask  (CreateTaskRequest)   returns (CreateTaskResponse);
-  rpc UpdateTask  (UpdateTaskRequest)   returns (UpdateTaskResponse);
-  rpc DeleteTask  (DeleteTaskRequest)   returns (DeleteTaskResponse);
-  rpc GetTaskByID (GetTaskByIDRequest)  returns (GetTaskByIDResponse);
-  rpc GetTasks    (GetTasksRequest)     returns (GetTasksResponse);
+  rpc CreateTask      (CreateTaskRequest)       returns (CreateTaskResponse);
+  rpc UpdateTask      (UpdateTaskRequest)       returns (UpdateTaskResponse);
+  rpc DeleteTask      (DeleteTaskRequest)       returns (DeleteTaskResponse);
+  rpc GetTaskByID     (GetTaskByIDRequest)      returns (GetTaskByIDResponse);
+  rpc GetTasks        (GetTasksRequest)         returns (GetTasksResponse);
+  rpc RecordExecution (RecordExecutionRequest)  returns (RecordExecutionResponse);
 }
