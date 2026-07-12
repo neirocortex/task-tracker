@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package taskTracker.v1;
+
+option go_package = "./v1;taskv1";
+
+import "google/protobuf/timestamp.proto";
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_NEW = 1;
+  TASK_STATUS_IN_PROGRESS = 2;
+  TASK_STATUS_DONE = 3;
+  TASK_STATUS_CANCELED = 4;
+}
+
+enum RecurrenceType {
+  RECURRENCE_TYPE_UNSPECIFIED = 0;
+  RECURRENCE_TYPE_DAILY = 1;
+  RECURRENCE_TYPE_MONTHLY = 2;
+  RECURRENCE_TYPE_DATES = 3;
+  RECURRENCE_TYPE_EVEN = 4;
+  RECURRENCE_TYPE_ODD = 5;
+}
+
+message TaskRecurrence {
+  RecurrenceType type = 1;
+  int32 interval = 2;
+  int32 day_of_month = 3;
+  repeated google.protobuf.Timestamp specifics = 4; 
+}
+
+message Task {
+  int64 id = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Timestamp due_date = 4;
+  TaskStatus status = 5;
+  repeated string tags = 6;
+  bool is_recurring = 7;
+}
+
+message CreateTaskRequest {
+  string title = 1;
+  string description = 2;
+  google.protobuf.Timestamp due_date = 3;
+  repeated string tags = 4;
+  TaskRecurrence recurrence = 5;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+message UpdateTaskRequest {
+  int64 id = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Timestamp due_date = 4;
+  TaskStatus status = 5;
+  repeated string tags = 6;
+  TaskRecurrence recurrence = 7;
+}
+
+message UpdateTaskResponse {
+}
+
+message DeleteTaskRequest {
+  int64 id = 1;
+}
+message DeleteTaskResponse {}
+
+message GetTaskByIDRequest {
+  int64 id = 1;
+}
+
+message GetTaskByIDResponse {
+  Task task = 1;
+}
+
+message PaginationMetadata {
+  int64 current_page = 1;
+  int64 limit = 2;
+  int64 total_items = 3;
+  int64 total_pages = 4;
+}
+
+message GetTasksRequest {
+  TaskStatus status = 1;
+  google.protobuf.Timestamp due_date_from  = 2;
+  google.protobuf.Timestamp due_date_to  = 3;
+  int64 page = 4;
+  int64 limit = 5;
+}
+
+message GetTasksResponse {
+  repeated Task data = 1;
+  PaginationMetadata pagination = 2;
+}
+
+service TaskService {
+  rpc CreateTask  (CreateTaskRequest)   returns (CreateTaskResponse);
+  rpc UpdateTask  (UpdateTaskRequest)   returns (UpdateTaskResponse);
+  rpc DeleteTask  (DeleteTaskRequest)   returns (DeleteTaskResponse);
+  rpc GetTaskByID (GetTaskByIDRequest)  returns (GetTaskByIDResponse);
+  rpc GetTasks    (GetTasksRequest)     returns (GetTasksResponse);
+}

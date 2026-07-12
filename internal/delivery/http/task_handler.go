@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"taskTracker/internal/repository/postgres"
+	"taskTracker/internal/domain"
 	"taskTracker/internal/usecase"
 )
 
@@ -114,7 +114,7 @@ func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task, err := h.getTaskQ.Execute(r.Context(), id)
-	if errors.Is(err, postgres.ErrTaskNotFound) {
+	if errors.Is(err, domain.ErrTaskNotFound) {
 		h.respondWithError(w, http.StatusNotFound, "task not found")
 		return
 	}
@@ -140,7 +140,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.updateCmd.Execute(r.Context(), req.ToDomain(id), req.Tags); err != nil {
-		if errors.Is(err, postgres.ErrTaskNotFound) {
+		if errors.Is(err, domain.ErrTaskNotFound) {
 			h.respondWithError(w, http.StatusNotFound, "task not found")
 			return
 		}
@@ -148,7 +148,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		slog.Error("internal error 8", "error", err)
 		return
 	}
-	h.respondWithJSON(w, http.StatusOK, map[string]string{"status": "updated"})
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +159,7 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.deleteCmd.Execute(r.Context(), id); err != nil {
-		if errors.Is(err, postgres.ErrTaskNotFound) {
+		if errors.Is(err, domain.ErrTaskNotFound) {
 			h.respondWithError(w, http.StatusNotFound, "task not found")
 			return
 		}
@@ -193,7 +193,7 @@ func (h *TaskHandler) RecordExecution(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.respondWithJSON(w, http.StatusOK, map[string]string{"status": "execution_recorded"})
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *TaskHandler) respondWithError(w http.ResponseWriter, code int, msg string) {

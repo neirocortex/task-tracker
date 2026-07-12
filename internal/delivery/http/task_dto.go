@@ -84,18 +84,13 @@ type PaginationMetadata struct {
 }
 
 func NewTaskResponse(t *domain.Task) TaskResponse {
-	dtoTags := make([]string, len(t.Tags))
-	for i, tag := range t.Tags {
-		dtoTags[i] = tag.Name
-	}
-
 	return TaskResponse{
 		ID:          t.ID,
 		Title:       t.Title,
 		Description: t.Description,
 		DueDate:     t.DueDate.Format(time.RFC3339),
 		Status:      t.Status,
-		Tags:        dtoTags,
+		Tags:        t.TagsStr(),
 		IsRecurring: t.IsRecurring(),
 	}
 }

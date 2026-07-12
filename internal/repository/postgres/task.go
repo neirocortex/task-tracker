@@ -12,8 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var ErrTaskNotFound = errors.New("task not found")
-
 // implements db contracts
 type TaskRepository struct {
 	db *sql.DB
@@ -87,7 +85,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*domain.Task, e
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrTaskNotFound
+		return nil, domain.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -254,7 +252,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *domain.Task) error {
 		return err
 	}
 	if rows == 0 {
-		return ErrTaskNotFound
+		return domain.ErrTaskNotFound
 	}
 	return nil
 }
@@ -271,7 +269,7 @@ func (r *TaskRepository) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	if rows == 0 {
-		return ErrTaskNotFound
+		return domain.ErrTaskNotFound
 	}
 	return nil
 }

@@ -4,15 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
+	"google.golang.org/grpc"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	deliveryGrpc "taskTracker/internal/delivery/grpc"
+	taskv1 "taskTracker/internal/delivery/grpc/v1"
 	deliveryHttp "taskTracker/internal/delivery/http"
 	repositoryPostgres "taskTracker/internal/repository/postgres"
 	usecase "taskTracker/internal/usecase"
@@ -64,14 +71,14 @@ func main() {
 	tagDeleteCmd := usecase.NewDeleteTagCommand(tagRepository)
 	tagListQ := usecase.NewGetTagsQuery(tagRepository)
 
-	// delivery
+	serverErrors := make(chan error, 2)
+
+	// delivery http
 	mux := http.NewServeMux()
-
-	taskHandler := deliveryHttp.NewTaskHandler(taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskGetQ, taskListQ, recordExecCmd)
-	taskHandler.RegisterRoutes(mux)
-
-	tagHandler := deliveryHttp.NewTagHandler(tagCreateCmd, tagUpdateCmd, tagDeleteCmd, tagListQ)
-	tagHandler.RegisterRoutes(mux)
+	taskHandlerHttp := deliveryHttp.NewTaskHandler(taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskGetQ, taskListQ, recordExecCmd)
+	taskHandlerHttp.RegisterRoutes(mux)
+	tagHandlerHttp := deliveryHttp.NewTagHandler(tagCreateCmd, tagUpdateCmd, tagDeleteCmd, tagListQ)
+	tagHandlerHttp.RegisterRoutes(mux)
 
 	// start server
 	serverAddr := os.Getenv("SERVER_ADDRESS")
@@ -85,11 +92,28 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	serverErrors := make(chan error, 1)
 	go func() {
 		logger.Info("http server listening", "addr", serverAddr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErrors <- err
+		}
+	}()
+
+	// delivery grpc
+	taskHandlerGrpc := deliveryGrpc.NewTaskHandler(taskCreateCmd, taskUpdateCmd, taskDeleteCmd, taskGetQ, taskListQ, recordExecCmd)
+	grpcServer := grpc.NewServer()
+	taskv1.RegisterTaskServiceServer(grpcServer, taskHandlerGrpc)
+
+	go func() {
+		logger.Info("gRPC server is starting on :50051")
+		lis, err := net.Listen("tcp", ":50051")
+		if err != nil {
+			serverErrors <- fmt.Errorf("failed to listen tcp port for grpc: %w", err)
+			return
+		}
+
+		if err := grpcServer.Serve(lis); err != nil {
+			serverErrors <- fmt.Errorf("grpc server failed to serve: %w", err)
 		}
 	}()
 
@@ -109,11 +133,41 @@ func main() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer shutdownCancel()
 
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			logger.Error("forced shutdown due to timeout", "error", err)
-			if err := srv.Close(); err != nil {
-				logger.Error("failed to close server listeners", "error", err)
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			logger.Info("stopping HTTP server gracefully")
+			if err := srv.Shutdown(shutdownCtx); err != nil {
+				logger.Error("forced HTTP shutdown due to timeout", "error", err)
+				if err := srv.Close(); err != nil {
+					logger.Error("failed to close HTTP server listeners", "error", err)
+				}
 			}
+			logger.Info("HTTP server stopped cleanly")
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			logger.Info("stopping gRPC server gracefully")
+			grpcServer.GracefulStop()
+			logger.Info("gRPC server stopped cleanly")
+		}()
+
+		allServersStopped := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(allServersStopped)
+		}()
+
+		select {
+		case <-allServersStopped:
+			logger.Info("all servers stopped successfully within timeout")
+		case <-shutdownCtx.Done():
+			logger.Error("shutdown timed out, forcing application exit")
+			grpcServer.Stop()
 		}
 	}
 

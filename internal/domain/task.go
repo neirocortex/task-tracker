@@ -15,7 +15,8 @@ const (
 )
 
 var (
-	ErrTitleEmpty = errors.New("title cannot be empty")
+	ErrTitleEmpty   = errors.New("title cannot be empty")
+	ErrTaskNotFound = errors.New("task not found")
 )
 
 // clean models, no json
@@ -37,4 +38,13 @@ type TaskFilter struct {
 	DueDateTo   *time.Time
 	Limit       int
 	Offset      int
+}
+
+func (task *Task) TagsStr() []string {
+	tags := make([]string, len(task.Tags))
+	for i, tag := range task.Tags {
+		tags[i] = tag.Name
+	}
+
+	return tags
 }
