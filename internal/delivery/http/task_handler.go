@@ -54,14 +54,10 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		h.respondWithError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if err := req.Validate(); err != nil {
-		h.respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
 
 	task := req.ToDomain()
 	if err := h.createCmd.Execute(r.Context(), task, req.Tags); err != nil {
-		if errors.Is(err, usecase.ErrInvalidDueDate) {
+		if errors.Is(err, domain.ErrTaskInvalid) {
 			h.respondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -140,6 +136,10 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.updateCmd.Execute(r.Context(), req.ToDomain(id), req.Tags); err != nil {
+		if errors.Is(err, domain.ErrTaskInvalid) {
+			h.respondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		if errors.Is(err, domain.ErrTaskNotFound) {
 			h.respondWithError(w, http.StatusNotFound, "task not found")
 			return
@@ -182,13 +182,13 @@ func (h *TaskHandler) RecordExecution(w http.ResponseWriter, r *http.Request) {
 		h.respondWithError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if err := req.Validate(); err != nil {
-		h.respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
 
 	err = h.recordExecCmd.Execute(r.Context(), id, req.Date, req.Status)
 	if err != nil {
+		if errors.Is(err, domain.ErrTaskInvalid) {
+			h.respondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		h.respondWithError(w, http.StatusInternalServerError, "failed to record execution status")
 		return
 	}

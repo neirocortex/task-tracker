@@ -14,6 +14,10 @@ func NewDeleteTagCommand(repo TagRemover) *DeleteTagCommand {
 }
 
 func (c *DeleteTagCommand) Execute(ctx context.Context, tagName string) error {
+	if err := c.validate(); err != nil {
+		return err
+	}
+
 	tag, err := domain.NewTag(tagName)
 	if err != nil {
 		return err
@@ -22,4 +26,8 @@ func (c *DeleteTagCommand) Execute(ctx context.Context, tagName string) error {
 		return err
 	}
 	return c.repo.DeleteTagFromRegistry(ctx, tag.Name)
+}
+
+func (c *DeleteTagCommand) validate() error {
+	return nil
 }

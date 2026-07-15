@@ -58,7 +58,7 @@ func NewTaskHandler(
 
 func mapDomainErrorToGRPC(err error) error {
 	switch err {
-	case domain.ErrTitleEmpty, domain.ErrDateReq, domain.ErrStatusReq, domain.ErrWrongRec:
+	case domain.ErrTaskInvalid:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case domain.ErrTaskNotFound:
 		return status.Error(codes.NotFound, err.Error())
@@ -264,14 +264,7 @@ func (h *TaskHandler) RecordExecution(ctx context.Context, req *taskv1.RecordExe
 	}
 
 	date := req.Date.AsTime()
-	if date.IsZero() {
-		return nil, mapDomainErrorToGRPC(domain.ErrDateReq)
-	}
-
-	status, ok := pbToDomainStatus[req.Status]
-	if !ok {
-		return nil, mapDomainErrorToGRPC(domain.ErrStatusReq)
-	}
+	status := pbToDomainStatus[req.Status]
 
 	err := h.recordExecCmd.Execute(ctx, req.Id, date, status)
 	if err != nil {

@@ -28,6 +28,10 @@ type PaginatedTasks struct {
 }
 
 func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter) (PaginatedTasks, error) {
+	if err := q.validate(filter); err != nil {
+		return PaginatedTasks{}, err
+	}
+
 	baseTasks, err := q.taskRepo.GetList(ctx, filter)
 	if err != nil {
 		return PaginatedTasks{}, err
@@ -95,14 +99,6 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter)
 	})
 	totalCount := len(virtualTasks)
 
-	if filter.Limit <= 0 {
-		filter.Limit = 20
-	}
-
-	if filter.Offset < 0 {
-		filter.Offset = 0
-	}
-
 	if filter.Offset >= totalCount {
 		return PaginatedTasks{Tasks: []domain.Task{}, TotalCount: totalCount}, nil
 	}
@@ -121,4 +117,28 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter)
 		}
 	}
 	return PaginatedTasks{Tasks: paginatedVirtualTasks, TotalCount: totalCount}, nil
+}
+
+func (q *ListTasksQuery) validate(filter *domain.TaskFilter) error {
+	if filter.Limit <= 0 || filter.Limit > 100 {
+		return domain.ErrTaskInvalid
+	}
+
+	if filter.Offset < 0 {
+		return domain.ErrTaskInvalid
+	}
+
+	if filter.DueDateFrom != nil && filter.DueDateTo != nil {
+		if filter.DueDateTo.IsZero() || filter.DueDateFrom.IsZero() || filter.DueDateTo.Before(*filter.DueDateFrom) {
+			return domain.ErrTaskInvalid
+		}
+	}
+
+	if filter.Status != nil {
+		if _, ok := domain.StatusTypes[*filter.Status]; !ok {
+			return domain.ErrTaskInvalid
+		}
+	}
+
+	return domain.ErrTaskInvalid
 }

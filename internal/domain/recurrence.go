@@ -16,9 +16,15 @@ const (
 )
 
 var (
-	ErrDateReq   = errors.New("date is required")
-	ErrStatusReq = errors.New("status is required")
-	ErrWrongRec  = errors.New("recurrence invalid")
+	ErrRecInvalid = errors.New("invalid arguments")
+
+	ReccurenceTypes = map[RecurrenceType]struct{}{
+		RecurrenceDaily:   {},
+		RecurrenceMonthly: {},
+		RecurrenceDates:   {},
+		RecurrenceEven:    {},
+		RecurrenceOdd:     {},
+	}
 )
 
 type TaskRecurrence struct {

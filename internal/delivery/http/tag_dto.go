@@ -8,13 +8,6 @@ type TagCreateRequest struct {
 	Name string `json:"name"`
 }
 
-func (r *TagCreateRequest) Validate() error {
-	if r.Name == "" {
-		return domain.ErrTagEmpty
-	}
-	return nil
-}
-
 type TagResponse struct {
 	Name     string `json:"name"`
 	IsSystem bool   `json:"is_system"`
@@ -37,13 +30,6 @@ func NewTagListResponse(tags []domain.Tag) []TagResponse {
 
 type TagUpdateRequest struct {
 	NewName string `json:"new_name"`
-}
-
-func (r *TagUpdateRequest) Validate() error {
-	if r.NewName == "" {
-		return domain.ErrTagEmpty
-	}
-	return nil
 }
 
 type PaginatedTagsResponse struct {

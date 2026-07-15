@@ -15,6 +15,10 @@ func NewUpdateTaskCommand(taskRepo TaskModifier, tagRepo TaskTagsSyncer) *Update
 }
 
 func (c *UpdateTaskCommand) Execute(ctx context.Context, task *domain.Task, tagNames []string) error {
+	if err := (&CreateTaskCommand{}).validate(task, tagNames); err != nil {
+		return err
+	}
+
 	if err := c.taskRepo.Update(ctx, task); err != nil {
 		return err
 	}

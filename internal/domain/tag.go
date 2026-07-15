@@ -4,14 +4,16 @@ import "errors"
 
 var (
 	ErrSystemTagModification = errors.New("system tags cannot be modified or deleted")
-	ErrTagEmpty              = errors.New("tag name cannot be empty")
+	ErrTagInvalid            = errors.New("invalid arguments")
 )
 
-var SystemTags = map[string]bool{
-	"отчетность": true,
-	"операции":   true,
-	"звонок":     true,
-}
+var (
+	SystemTags = map[string]struct{}{
+		"отчетность": {},
+		"операции":   {},
+		"звонок":     {},
+	}
+)
 
 type Tag struct {
 	Name     string
@@ -19,12 +21,11 @@ type Tag struct {
 }
 
 func NewTag(name string) (Tag, error) {
-	if name == "" {
-		return Tag{}, ErrTagEmpty
-	}
+	_, isSys := SystemTags[name]
+
 	return Tag{
 		Name:     name,
-		IsSystem: SystemTags[name],
+		IsSystem: isSys,
 	}, nil
 }
 

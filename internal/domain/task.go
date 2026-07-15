@@ -15,8 +15,15 @@ const (
 )
 
 var (
-	ErrTitleEmpty   = errors.New("title cannot be empty")
+	ErrTaskInvalid  = errors.New("invalid arguments")
 	ErrTaskNotFound = errors.New("task not found")
+
+	StatusTypes = map[TaskStatus]struct{}{
+		StatusNew:        {},
+		StatusInProgress: {},
+		StatusDone:       {},
+		StatusCanceled:   {},
+	}
 )
 
 // clean models, no json

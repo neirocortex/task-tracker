@@ -2,12 +2,9 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"taskTracker/internal/domain"
 	"time"
 )
-
-var ErrInvalidDueDate = errors.New("due date must be in the future")
 
 // cqrs for solid srp : every command has separate object
 type CreateTaskCommand struct {
@@ -23,9 +20,10 @@ func NewCreateTaskCommand(taskRepo TaskSaver, tagRepo TaskTagsSyncer) *CreateTas
 }
 
 func (c *CreateTaskCommand) Execute(ctx context.Context, task *domain.Task, tagNames []string) error {
-	if task.DueDate.Before(time.Now()) {
-		return ErrInvalidDueDate
+	if err := c.validate(task, tagNames); err != nil {
+		return err
 	}
+
 	task.Status = domain.StatusNew
 
 	if err := c.taskRepo.Create(ctx, task); err != nil {
@@ -48,5 +46,27 @@ func (c *CreateTaskCommand) Execute(ctx context.Context, task *domain.Task, tagN
 	}
 
 	task.Tags = domainTags
+	return nil
+}
+
+func (c *CreateTaskCommand) validate(task *domain.Task, tagNames []string) error {
+	if task.Title == "" {
+		return domain.ErrTaskInvalid
+	}
+
+	if task.DueDate.Before(time.Now()) {
+		return domain.ErrTaskInvalid
+	}
+
+	if _, ok := domain.ReccurenceTypes[task.Recurrence.Type]; !ok {
+		return domain.ErrTaskInvalid
+	}
+
+	for _, tagName := range tagNames {
+		if tagName == "" {
+			return domain.ErrTaskInvalid
+		}
+	}
+
 	return nil
 }

@@ -38,13 +38,3 @@ type RecordExecutionRequest struct {
 	Date   time.Time         `json:"date"`
 	Status domain.TaskStatus `json:"status"`
 }
-
-func (r *RecordExecutionRequest) Validate() error {
-	if r.Date.IsZero() {
-		return domain.ErrDateReq
-	}
-	if r.Status == "" {
-		return domain.ErrStatusReq
-	}
-	return nil
-}

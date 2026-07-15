@@ -6,4 +6,5 @@ generate:
 		--go_opt=paths=import \
 		--go-grpc_out=. \
 		--go-grpc_opt=paths=import \
-		proto/task.proto
+		proto/task.proto \
+		proto/tag.proto \

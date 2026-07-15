@@ -46,13 +46,8 @@ func (h *TagHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := req.Validate(); err != nil {
-		h.respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
 	if err := h.createCmd.Execute(r.Context(), req.Name); err != nil {
-		if errors.Is(err, domain.ErrTagEmpty) {
+		if errors.Is(err, domain.ErrTagInvalid) {
 			h.respondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -141,13 +136,12 @@ func (h *TagHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := req.Validate(); err != nil {
-		h.respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
 	err := h.updateCmd.Execute(r.Context(), oldName, req.NewName)
 	if err != nil {
+		if errors.Is(err, domain.ErrTagInvalid) {
+			h.respondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		if errors.Is(err, domain.ErrSystemTagModification) {
 			h.respondWithError(w, http.StatusForbidden, err.Error())
 			return

@@ -16,20 +16,6 @@ type CreateTaskRequest struct {
 	Recurrence  *RecurrenceDTO `json:"recurrence,omitempty"`
 }
 
-func (r *CreateTaskRequest) Validate() error {
-	if r.Title == "" {
-		return domain.ErrTitleEmpty
-	}
-	if r.Recurrence != nil {
-		t := domain.RecurrenceType(r.Recurrence.Type)
-		if t != domain.RecurrenceDaily && t != domain.RecurrenceMonthly &&
-			t != domain.RecurrenceDates && t != domain.RecurrenceEven && t != domain.RecurrenceOdd {
-			return domain.ErrWrongRec
-		}
-	}
-	return nil
-}
-
 func (r *CreateTaskRequest) ToDomain() *domain.Task {
 	return &domain.Task{
 		Title:       r.Title,

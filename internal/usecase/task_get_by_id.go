@@ -19,6 +19,10 @@ func NewGetTaskByIDQuery(taskRepo TaskViewer, tagRepo TaskTagsBulkViewer) *GetTa
 }
 
 func (q *GetTaskByIDQuery) Execute(ctx context.Context, id int64) (*domain.Task, error) {
+	if err := q.validate(); err != nil {
+		return nil, err
+	}
+
 	task, err := q.taskRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -36,4 +40,8 @@ func (q *GetTaskByIDQuery) Execute(ctx context.Context, id int64) (*domain.Task,
 	}
 
 	return task, nil
+}
+
+func (q *GetTaskByIDQuery) validate() error {
+	return nil
 }

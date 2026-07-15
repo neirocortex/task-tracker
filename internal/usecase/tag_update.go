@@ -14,7 +14,10 @@ func NewUpdateTagCommand(repo TagModifier) *UpdateTagCommand {
 }
 
 func (c *UpdateTagCommand) Execute(ctx context.Context, oldName string, newName string) error {
-	// check if we update system name
+	if err := c.validate(oldName, newName); err != nil {
+		return err
+	}
+
 	oldTag, err := domain.NewTag(oldName)
 	if err != nil {
 		return err
@@ -23,11 +26,13 @@ func (c *UpdateTagCommand) Execute(ctx context.Context, oldName string, newName 
 		return err
 	}
 
-	// check if new name is valid
-	_, err = domain.NewTag(newName)
-	if err != nil {
-		return err
+	return c.repo.UpdateTagInRegistry(ctx, oldName, newName)
+}
+
+func (c *UpdateTagCommand) validate(oldName string, newName string) error {
+	if oldName == "" || newName == "" {
+		return domain.ErrTagInvalid
 	}
 
-	return c.repo.UpdateTagInRegistry(ctx, oldName, newName)
+	return nil
 }
