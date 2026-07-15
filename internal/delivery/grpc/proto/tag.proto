@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package taskTracker.v1;
+
+option go_package = "./v1;taskv1";
+
+message TagResponse {
+  string name = 1;
+  bool is_system = 2;
+}
+
+message TagPaginationMeta {
+  int64 current_page = 1;
+  int64 limit = 2;
+  int64 total_items = 3;
+  int64 total_pages = 4;
+}
+
+message CreateTagRequest {
+  string name = 1;
+}
+message CreateTagResponse {}
+
+message UpdateTagRequest {
+  string name = 1;
+  string new_name = 2;
+}
+message UpdateTagResponse {}
+
+message DeleteTagRequest {
+  string name = 1;
+}
+message DeleteTagResponse {}
+
+message GetTagsRequest {
+  int64 page = 1;
+  int64 limit = 2;
+}
+message GetTagsResponse {
+  repeated TagResponse data = 1;
+  TagPaginationMeta pagination = 2;
+}
+
+service TagService {
+  rpc CreateTag (CreateTagRequest)  returns (CreateTagResponse);
+  rpc UpdateTag (UpdateTagRequest)  returns (UpdateTagResponse);
+  rpc DeleteTag (DeleteTagRequest)  returns (DeleteTagResponse);
+  rpc GetTags   (GetTagsRequest)    returns (GetTagsResponse);
+}
