@@ -56,7 +56,7 @@ func NewTaskHandler(
 	}
 }
 
-func mapDomainErrorToGRPC(err error) error {
+func mapTaskDomainErrorToGRPC(err error) error {
 	switch err {
 	case domain.ErrTaskInvalid:
 		return status.Error(codes.InvalidArgument, err.Error())
@@ -150,14 +150,6 @@ func toDomainFilter(req *taskv1.GetTasksRequest) *domain.TaskFilter {
 		filter.DueDateTo = &t
 	}
 
-	filter.Limit = int(req.Limit)
-
-	if req.Page > 0 {
-		filter.Offset = int((req.Page - 1) * req.Limit)
-	} else {
-		filter.Offset = 0
-	}
-
 	return &filter
 }
 
@@ -170,7 +162,7 @@ func (h *TaskHandler) CreateTask(ctx context.Context, req *taskv1.CreateTaskRequ
 
 	err := h.createCmd.Execute(ctx, taskDomain, req.Tags)
 	if err != nil {
-		return nil, mapDomainErrorToGRPC(err)
+		return nil, mapTaskDomainErrorToGRPC(err)
 	}
 
 	return &taskv1.CreateTaskResponse{
@@ -186,7 +178,7 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *taskv1.UpdateTaskRequ
 	taskDomain := toDomainTaskUpdate(req)
 	err := h.updateCmd.Execute(ctx, taskDomain, req.Tags)
 	if err != nil {
-		return nil, mapDomainErrorToGRPC(err)
+		return nil, mapTaskDomainErrorToGRPC(err)
 	}
 
 	return &taskv1.UpdateTaskResponse{}, nil
@@ -199,7 +191,7 @@ func (h *TaskHandler) DeleteTask(ctx context.Context, req *taskv1.DeleteTaskRequ
 
 	err := h.deleteCmd.Execute(ctx, req.Id)
 	if err != nil {
-		return nil, mapDomainErrorToGRPC(err)
+		return nil, mapTaskDomainErrorToGRPC(err)
 	}
 
 	return &taskv1.DeleteTaskResponse{}, nil
@@ -212,7 +204,7 @@ func (h *TaskHandler) GetTaskByID(ctx context.Context, req *taskv1.GetTaskByIDRe
 
 	taskDomain, err := h.getTaskQ.Execute(ctx, req.Id)
 	if err != nil {
-		return nil, mapDomainErrorToGRPC(err)
+		return nil, mapTaskDomainErrorToGRPC(err)
 	}
 
 	return &taskv1.GetTaskByIDResponse{
@@ -227,9 +219,9 @@ func (h *TaskHandler) GetTasks(ctx context.Context, req *taskv1.GetTasksRequest)
 
 	filter := toDomainFilter(req)
 
-	paginatedData, err := h.listTasksQ.Execute(ctx, filter)
+	paginatedData, err := h.listTasksQ.Execute(ctx, filter, int(req.Limit), int(req.Page))
 	if err != nil {
-		return nil, mapDomainErrorToGRPC(err)
+		return nil, mapTaskDomainErrorToGRPC(err)
 	}
 
 	tasksPb := make([]*taskv1.Task, len(paginatedData.Tasks))
@@ -237,22 +229,13 @@ func (h *TaskHandler) GetTasks(ctx context.Context, req *taskv1.GetTasksRequest)
 		tasksPb[i] = toPbTask(&paginatedData.Tasks[i])
 	}
 
-	var totalCount int64 = int64(paginatedData.TotalCount)
-	var limit int64 = int64(filter.Limit)
-	var page int64 = int64(filter.Offset/filter.Limit + 1)
-
-	var totalPages int64
-	if totalCount > 0 {
-		totalPages = (totalCount + limit - 1) / limit
-	}
-
 	response := &taskv1.GetTasksResponse{
 		Data: tasksPb,
 		Pagination: &taskv1.PaginationMetadata{
-			CurrentPage: page,
-			Limit:       limit,
-			TotalItems:  totalCount,
-			TotalPages:  totalPages,
+			CurrentPage: req.Page,
+			Limit:       req.Limit,
+			TotalItems:  int64(paginatedData.TotalCount),
+			TotalPages:  int64(paginatedData.TotalPages),
 		},
 	}
 	return response, nil
@@ -268,7 +251,7 @@ func (h *TaskHandler) RecordExecution(ctx context.Context, req *taskv1.RecordExe
 
 	err := h.recordExecCmd.Execute(ctx, req.Id, date, status)
 	if err != nil {
-		return nil, mapDomainErrorToGRPC(err)
+		return nil, mapTaskDomainErrorToGRPC(err)
 	}
 
 	return &taskv1.RecordExecutionResponse{}, nil

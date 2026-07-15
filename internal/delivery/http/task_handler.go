@@ -73,7 +73,7 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 	filter := req.ToDomainFilter()
 
-	paginatedData, err := h.listTasksQ.Execute(r.Context(), filter)
+	paginatedData, err := h.listTasksQ.Execute(r.Context(), filter, req.Limit, req.Page)
 	if err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
 		slog.Error("internal error 6", "error", err)
@@ -85,18 +85,13 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 		taskResponses = append(taskResponses, NewTaskResponse(&t))
 	}
 
-	totalPages := 0
-	if paginatedData.TotalCount > 0 {
-		totalPages = (paginatedData.TotalCount + req.Limit - 1) / req.Limit
-	}
-
 	response := PaginatedResponse{
 		Data: taskResponses,
 		Pagination: PaginationMetadata{
 			CurrentPage: req.Page,
 			Limit:       req.Limit,
 			TotalItems:  paginatedData.TotalCount,
-			TotalPages:  totalPages,
+			TotalPages:  paginatedData.TotalPages,
 		},
 	}
 	h.respondWithJSON(w, http.StatusOK, response)

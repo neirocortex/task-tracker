@@ -63,20 +63,10 @@ func (h *TagHandler) GetTags(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	page, _ := strconv.Atoi(q.Get("page"))
-	if page <= 0 {
-		page = 1
-	}
 
 	limit, _ := strconv.Atoi(q.Get("limit"))
-	if limit <= 0 {
-		limit = 20
-	} else if limit > 100 {
-		limit = 100
-	}
 
-	offset := (page - 1) * limit
-
-	paginatedData, err := h.listQuery.Execute(r.Context(), limit, offset)
+	paginatedData, err := h.listQuery.Execute(r.Context(), limit, page)
 	if err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "internal error")
 		slog.Error("internal error 2", "error", err)
@@ -85,18 +75,13 @@ func (h *TagHandler) GetTags(w http.ResponseWriter, r *http.Request) {
 
 	tagResponses := NewTagListResponse(paginatedData.Tags)
 
-	totalPages := 0
-	if paginatedData.TotalCount > 0 {
-		totalPages = (paginatedData.TotalCount + limit - 1) / limit
-	}
-
 	response := PaginatedTagsResponse{
 		Data: tagResponses,
 		Pagination: TagPaginationMeta{
 			CurrentPage: page,
 			Limit:       limit,
 			TotalItems:  paginatedData.TotalCount,
-			TotalPages:  totalPages,
+			TotalPages:  paginatedData.TotalPages,
 		},
 	}
 

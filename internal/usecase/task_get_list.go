@@ -25,10 +25,11 @@ func NewListTasksQuery(taskRepo TaskViewer, tagRepo TaskTagsBulkViewer, execRepo
 type PaginatedTasks struct {
 	Tasks      []domain.Task
 	TotalCount int
+	TotalPages int
 }
 
-func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter) (PaginatedTasks, error) {
-	if err := q.validate(filter); err != nil {
+func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter, limit int, page int) (PaginatedTasks, error) {
+	if err := q.validate(filter, limit, page); err != nil {
 		return PaginatedTasks{}, err
 	}
 
@@ -37,7 +38,7 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter)
 		return PaginatedTasks{}, err
 	}
 	if len(baseTasks) == 0 {
-		return PaginatedTasks{Tasks: []domain.Task{}, TotalCount: 0}, nil
+		return PaginatedTasks{Tasks: []domain.Task{}, TotalCount: 0, TotalPages: 0}, nil
 	}
 	taskIDs := make([]int64, len(baseTasks))
 	for i, t := range baseTasks {
@@ -99,16 +100,18 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter)
 	})
 	totalCount := len(virtualTasks)
 
-	if filter.Offset >= totalCount {
-		return PaginatedTasks{Tasks: []domain.Task{}, TotalCount: totalCount}, nil
+	offset := calcOffsetTask(limit, page)
+
+	if offset >= totalCount {
+		return PaginatedTasks{Tasks: []domain.Task{}, TotalCount: totalCount, TotalPages: calcPagesTask(totalCount, limit)}, nil
 	}
 
-	end := filter.Offset + filter.Limit
+	end := offset + limit
 	if end > totalCount {
 		end = totalCount
 	}
 
-	paginatedVirtualTasks := virtualTasks[filter.Offset:end]
+	paginatedVirtualTasks := virtualTasks[offset:end]
 	for i := range paginatedVirtualTasks {
 		if tags, exists := tagsMap[paginatedVirtualTasks[i].ID]; exists {
 			paginatedVirtualTasks[i].Tags = tags
@@ -116,15 +119,15 @@ func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter)
 			paginatedVirtualTasks[i].Tags = []domain.Tag{}
 		}
 	}
-	return PaginatedTasks{Tasks: paginatedVirtualTasks, TotalCount: totalCount}, nil
+	return PaginatedTasks{Tasks: paginatedVirtualTasks, TotalCount: totalCount, TotalPages: calcPagesTask(totalCount, limit)}, nil
 }
 
-func (q *ListTasksQuery) validate(filter *domain.TaskFilter) error {
-	if filter.Limit <= 0 || filter.Limit > 100 {
+func (q *ListTasksQuery) validate(filter *domain.TaskFilter, limit int, page int) error {
+	if limit <= 0 || limit > 100 {
 		return domain.ErrTaskInvalid
 	}
 
-	if filter.Offset < 0 {
+	if page < 0 {
 		return domain.ErrTaskInvalid
 	}
 
@@ -141,4 +144,20 @@ func (q *ListTasksQuery) validate(filter *domain.TaskFilter) error {
 	}
 
 	return domain.ErrTaskInvalid
+}
+
+func calcOffsetTask(limit, page int) int {
+	if page > 0 {
+		return (page - 1) * limit
+	} else {
+		return 0
+	}
+}
+
+func calcPagesTask(totalCount int, limit int) int {
+	if totalCount > 0 && limit > 0 {
+		return (totalCount + limit - 1) / limit
+	} else {
+		return 0
+	}
 }

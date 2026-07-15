@@ -125,12 +125,6 @@ func (req GetTasksRequest) ToDomainFilter() *domain.TaskFilter {
 	if t, err := time.Parse(time.RFC3339, req.DueDateTo); err == nil {
 		filter.DueDateTo = &t
 	}
-	filter.Limit = req.Limit
-	if req.Page > 0 {
-		filter.Offset = (req.Page - 1) * req.Limit
-	} else {
-		filter.Offset = 0
-	}
 
 	return &filter
 }
