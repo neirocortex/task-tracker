@@ -140,8 +140,6 @@ func (h *TagHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
 		slog.Error("internal error 4", "error", err)
 		return
 	}
-
-	h.respondWithJSON(w, http.StatusOK, map[string]string{"status": "updated"})
 }
 
 func (h *TagHandler) respondWithError(w http.ResponseWriter, code int, msg string) {
