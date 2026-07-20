@@ -143,7 +143,7 @@ func (q *ListTasksQuery) validate(filter *domain.TaskFilter, limit int, page int
 		}
 	}
 
-	return domain.ErrTaskInvalid
+	return nil
 }
 
 func calcOffsetTask(limit, page int) int {

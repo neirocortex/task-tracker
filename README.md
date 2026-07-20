@@ -62,7 +62,7 @@ curl -X POST http://localhost:8080/api/v1/tasks \
 #### 2. Получение списка задач с фильтрацией и пагинацией (GET)
 *Запрос возвращает задачи постранично в объекте `data` вместе с метаданными `pagination`.*
 ```bash
-curl "http://localhost:8080/api/v1/tasks?status=NEW&due_date_from=2030-01-01T00:00:00Z&page=1&limit=20"
+curl "http://localhost:8080/api/v1/tasks?status=NEW&page=1&limit=20"
 ```
 
 #### 3. Получение задачи по ID (GET)

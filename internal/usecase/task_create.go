@@ -58,8 +58,10 @@ func (c *CreateTaskCommand) validate(task *domain.Task, tagNames []string) error
 		return domain.ErrTaskInvalid
 	}
 
-	if _, ok := domain.ReccurenceTypes[task.Recurrence.Type]; !ok {
-		return domain.ErrTaskInvalid
+	if task.Recurrence != nil {
+		if _, ok := domain.ReccurenceTypes[task.Recurrence.Type]; !ok {
+			return domain.ErrTaskInvalid
+		}
 	}
 
 	for _, tagName := range tagNames {

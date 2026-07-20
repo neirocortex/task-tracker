@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"taskTracker/internal/domain"
@@ -61,8 +60,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 			h.respondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		h.respondWithError(w, http.StatusInternalServerError, "internal error")
-		slog.Error("internal error 5", "error", err)
+		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	h.respondWithJSON(w, http.StatusCreated, NewTaskResponse(task))
@@ -75,8 +73,7 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 	paginatedData, err := h.listTasksQ.Execute(r.Context(), filter, req.Limit, req.Page)
 	if err != nil {
-		h.respondWithError(w, http.StatusInternalServerError, "internal error")
-		slog.Error("internal error 6", "error", err)
+		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -110,8 +107,7 @@ func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		h.respondWithError(w, http.StatusInternalServerError, "internal error")
-		slog.Error("internal error 7", "error", err)
+		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	h.respondWithJSON(w, http.StatusOK, NewTaskResponse(task))
@@ -139,8 +135,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 			h.respondWithError(w, http.StatusNotFound, "task not found")
 			return
 		}
-		h.respondWithError(w, http.StatusInternalServerError, "internal error")
-		slog.Error("internal error 8", "error", err)
+		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -158,8 +153,7 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 			h.respondWithError(w, http.StatusNotFound, "task not found")
 			return
 		}
-		h.respondWithError(w, http.StatusInternalServerError, "internal error")
-		slog.Error("internal error 9", "error", err)
+		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
