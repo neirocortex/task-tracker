@@ -21,6 +21,7 @@ import (
 	deliveryGrpc "taskTracker/internal/delivery/grpc"
 	taskv1 "taskTracker/internal/delivery/grpc/v1"
 	deliveryHttp "taskTracker/internal/delivery/http"
+	repositoryKafka "taskTracker/internal/repository/kafka"
 	repositoryPostgres "taskTracker/internal/repository/postgres"
 	usecase "taskTracker/internal/usecase"
 )
@@ -53,13 +54,21 @@ func main() {
 	db.SetMaxIdleConns(25)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
+	//kafka
+	kafkaAddr := os.Getenv("KAFKA_BROKERS")
+	if kafkaAddr == "" {
+		kafkaAddr = "kafka:9092"
+	}
+	kafkaProducer := repositoryKafka.NewTaskNotyfier(kafkaAddr)
+	kafkaConsumer := repositoryKafka.NewTaskConsumer(kafkaAddr, kafkaProducer)
+
 	// clean architecture layers dependency injection
 	// repository
 	taskRepository := repositoryPostgres.NewTaskRepository(db)
 	tagRepository := repositoryPostgres.NewTagRepository(db)
 
 	// usecase
-	taskCreateCmd := usecase.NewCreateTaskCommand(taskRepository, tagRepository)
+	taskCreateCmd := usecase.NewCreateTaskCommand(taskRepository, tagRepository, kafkaProducer)
 	taskUpdateCmd := usecase.NewUpdateTaskCommand(taskRepository, tagRepository)
 	taskDeleteCmd := usecase.NewDeleteTaskCommand(taskRepository)
 	taskGetQ := usecase.NewGetTaskByIDQuery(taskRepository, tagRepository)
@@ -155,6 +164,26 @@ func main() {
 			grpcServer.GracefulStop()
 			logger.Info("gRPC server stopped cleanly")
 		}()
+
+		if kafkaProducer != nil {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				logger.Info("stopping kafka producer gracefully")
+				kafkaProducer.Close()
+				logger.Info("kafka producer stopped cleanly")
+			}()
+		}
+
+		if kafkaConsumer != nil {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				logger.Info("stopping kafka consumer gracefully")
+				kafkaConsumer.Close()
+				logger.Info("kafka consumer stopped cleanly")
+			}()
+		}
 
 		allServersStopped := make(chan struct{})
 		go func() {

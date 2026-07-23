@@ -8,14 +8,16 @@ import (
 
 // cqrs for solid srp : every command has separate object
 type CreateTaskCommand struct {
-	taskRepo TaskSaver
-	tagRepo  TaskTagsSyncer
+	taskRepo         TaskSaver
+	tagRepo          TaskTagsSyncer
+	taskSaveNotyfier TaskSaveNotyfier
 }
 
-func NewCreateTaskCommand(taskRepo TaskSaver, tagRepo TaskTagsSyncer) *CreateTaskCommand {
+func NewCreateTaskCommand(taskRepo TaskSaver, tagRepo TaskTagsSyncer, taskSaveNotyfier TaskSaveNotyfier) *CreateTaskCommand {
 	return &CreateTaskCommand{
-		taskRepo: taskRepo,
-		tagRepo:  tagRepo,
+		taskRepo:         taskRepo,
+		tagRepo:          tagRepo,
+		taskSaveNotyfier: taskSaveNotyfier,
 	}
 }
 
@@ -30,22 +32,25 @@ func (c *CreateTaskCommand) Execute(ctx context.Context, task *domain.Task, tagN
 		return err
 	}
 
-	if len(tagNames) == 0 {
-		return nil
+	if c.taskSaveNotyfier != nil {
+		c.taskSaveNotyfier.SendCreate(ctx, task)
 	}
 
-	syncTags, err := c.tagRepo.SyncTaskTags(ctx, task.ID, tagNames)
-	if err != nil {
-		return err
+	if len(tagNames) != 0 {
+		syncTags, err := c.tagRepo.SyncTaskTags(ctx, task.ID, tagNames)
+		if err != nil {
+			return err
+		}
+
+		domainTags := make([]domain.Tag, len(syncTags))
+		for i, name := range syncTags {
+			tag, _ := domain.NewTag(name)
+			domainTags[i] = tag
+		}
+
+		task.Tags = domainTags
 	}
 
-	domainTags := make([]domain.Tag, len(syncTags))
-	for i, name := range syncTags {
-		tag, _ := domain.NewTag(name)
-		domainTags[i] = tag
-	}
-
-	task.Tags = domainTags
 	return nil
 }
 

@@ -31,3 +31,8 @@ type TaskExecutionViewer interface {
 type TaskExecutionSaver interface {
 	SaveExecutionStatus(ctx context.Context, taskID int64, date time.Time, status domain.TaskStatus) error
 }
+
+// notifyer contracts
+type TaskSaveNotyfier interface {
+	SendCreate(ctx context.Context, task *domain.Task)
+}
