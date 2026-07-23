@@ -1,5 +1,4 @@
 services:
-  # 1. Isolated DB PostgreSQL
   postgres:
     image: postgres:16-alpine
     container_name: med_mis_db
@@ -9,7 +8,6 @@ services:
       POSTGRES_DB: med_mis
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # Check to start migrations
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d med_mis"]
       interval: 3s
@@ -37,18 +35,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. Automatic migrations after DB start
-  migrations:
-    image: migrate/migrate:v4.17.0
-    container_name: med_mis_migrations
-    volumes:
-      - ./migrations:/migrations
-    command: -path=/migrations -database "postgres://postgres:postgres@postgres:5432/med_mis?sslmode=disable" up
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  # 3. Api starts after bigrations are done
   api:
     build:
       context: .
@@ -65,8 +51,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      migrations:
-        condition: service_completed_successfully
 
 volumes:
   pgdata:

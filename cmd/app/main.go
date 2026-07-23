@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -18,6 +19,10 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+
 	deliveryGrpc "taskTracker/internal/delivery/grpc"
 	taskv1 "taskTracker/internal/delivery/grpc/v1"
 	deliveryHttp "taskTracker/internal/delivery/http"
@@ -25,6 +30,9 @@ import (
 	repositoryPostgres "taskTracker/internal/repository/postgres"
 	usecase "taskTracker/internal/usecase"
 )
+
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 func main() {
 	// log init
@@ -53,6 +61,32 @@ func main() {
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
 	db.SetConnMaxLifetime(5 * time.Minute)
+
+	logger.Info("Running database migrations")
+
+	sourceDriver, err := iofs.New(migrationsFS, "migrations")
+	if err != nil {
+		logger.Error("failed to create migrations source driver", "error", err)
+		os.Exit(1)
+	}
+
+	dbDriver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		logger.Error("failed to create migrations db driver", "error", err)
+		os.Exit(1)
+	}
+
+	m, err := migrate.NewWithInstance("iofs", sourceDriver, "postgres", dbDriver)
+	if err != nil {
+		logger.Error("failed to initialize migrator instance", "error", err)
+		os.Exit(1)
+	}
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		logger.Error("failed to apply database migrations", "error", err)
+		os.Exit(1)
+	}
+	logger.Info("Database migrations sync completed successfully")
 
 	//kafka
 	kafkaAddr := os.Getenv("KAFKA_BROKERS")
