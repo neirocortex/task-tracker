@@ -17,7 +17,6 @@ func NewTagRepository(db *sql.DB) *TagRepository {
 
 func (r *TagRepository) SyncTaskTags(ctx context.Context, taskID int64, tagNames []string) (syncTags []string, err error) {
 	syncTags = []string{}
-	err = nil
 
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
