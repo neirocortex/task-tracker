@@ -15,20 +15,31 @@ func NewTagRepository(db *sql.DB) *TagRepository {
 	return &TagRepository{db: db}
 }
 
-func (r *TagRepository) SyncTaskTags(ctx context.Context, taskID int64, tagNames []string) ([]string, error) {
+func (r *TagRepository) SyncTaskTags(ctx context.Context, taskID int64, tagNames []string) (syncTags []string, err error) {
+	syncTags = []string{}
+	err = nil
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				err = rollbackErr
+			}
+		}
+	}()
 
 	_, err = tx.ExecContext(ctx, "DELETE FROM task_tags WHERE task_id = $1", taskID)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	if len(tagNames) == 0 {
-		return []string{}, tx.Commit()
+		err = tx.Commit()
+		return
 	}
 
 	insertQuery := `
@@ -41,29 +52,25 @@ func (r *TagRepository) SyncTaskTags(ctx context.Context, taskID int64, tagNames
 
 	stmt, err := tx.PrepareContext(ctx, insertQuery)
 	if err != nil {
-		return nil, err
+		return
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
-	var syncTags []string
 	for _, name := range tagNames {
 		var insertedName string
-		err := stmt.QueryRowContext(ctx, taskID, name).Scan(&insertedName)
+		err = stmt.QueryRowContext(ctx, taskID, name).Scan(&insertedName)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				// silent fail: tag is removed
 				continue
 			}
-			return nil, err
+			return
 		}
 		syncTags = append(syncTags, insertedName)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return syncTags, nil
+	err = tx.Commit()
+	return
 }
 
 func (r *TagRepository) FetchTagsForTasks(ctx context.Context, taskIDs []int64) (map[int64][]domain.Tag, error) {
@@ -82,7 +89,7 @@ func (r *TagRepository) FetchTagsForTasks(ctx context.Context, taskIDs []int64) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var taskID int64
@@ -105,7 +112,7 @@ func (r *TagRepository) FindAllTags(ctx context.Context, limit, offset int) ([]d
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tags []domain.Tag
 	totalCount := 0

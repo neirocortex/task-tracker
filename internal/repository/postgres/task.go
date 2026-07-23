@@ -128,7 +128,7 @@ func (r *TaskRepository) GetList(ctx context.Context, filter *domain.TaskFilter)
 		if filter.Status != nil {
 			queryReq += fmt.Sprintf(" AND status = $%d", argCount)
 			args = append(args, *filter.Status)
-			argCount++
+			//argCount++
 		}
 
 		query = queryNotReq + ` UNION ALL ` + queryReq
@@ -136,7 +136,7 @@ func (r *TaskRepository) GetList(ctx context.Context, filter *domain.TaskFilter)
 		if filter.Status != nil {
 			query += fmt.Sprintf(" WHERE status = $%d", argCount)
 			args = append(args, *filter.Status)
-			argCount++
+			//argCount++
 		}
 	}
 
@@ -145,7 +145,7 @@ func (r *TaskRepository) GetList(ctx context.Context, filter *domain.TaskFilter)
 		slog.Error("Database GetList query execution failed", "error", err, "query", query)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tasks []domain.Task
 
@@ -289,7 +289,7 @@ func (r *TaskRepository) FetchExecutionsForPeriod(ctx context.Context, taskIDs [
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var taskID int64
