@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f compose.yaml --out k8s/
+    kompose.version: 1.38.0 (a8f5d1cbd)
+  labels:
+    io.kompose.service: api
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: api
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f compose.yaml --out k8s/
+        kompose.version: 1.38.0 (a8f5d1cbd)
+      labels:
+        io.kompose.service: api
+    spec:
+      containers:
+        - env:
+            - name: DATABASE_URL
+              value: postgres://postgres:postgres@postgres:5432/med_mis?sslmode=disable
+            - name: KAFKA_BROKERS
+              value: kafka:9092
+            - name: SERVER_ADDRESS
+              value: :8080
+          name: med-mis-api
+          image: med-mis-api:local
+          imagePullPolicy: Never
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            failureThreshold: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+      restartPolicy: Always
