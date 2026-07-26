@@ -20,7 +20,7 @@ func createTopic(brokerAddress, topic string, partitions int) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	controller, err := conn.Controller()
 	if err != nil {
@@ -31,7 +31,7 @@ func createTopic(brokerAddress, topic string, partitions int) error {
 	if err != nil {
 		return err
 	}
-	defer controllerConn.Close()
+	defer func() { _ = controllerConn.Close() }()
 
 	topicConfig := kafkaImp.TopicConfig{
 		Topic:             topic,
@@ -67,8 +67,8 @@ func NewTaskNotyfier(brokerAddress string) *TaskNotyfier {
 	}
 }
 
-func (tn *TaskNotyfier) Close() {
-	tn.writer.Close()
+func (tn *TaskNotyfier) Close() error {
+	return tn.writer.Close()
 }
 
 type TaskCreateEvent struct {

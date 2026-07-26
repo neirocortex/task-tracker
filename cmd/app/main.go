@@ -188,7 +188,6 @@ func main() {
 					logger.Error("failed to close HTTP server listeners", "error", err)
 				}
 			}
-			logger.Info("HTTP server stopped cleanly")
 		}()
 
 		wg.Add(1)
@@ -196,7 +195,6 @@ func main() {
 			defer wg.Done()
 			logger.Info("stopping gRPC server gracefully")
 			grpcServer.GracefulStop()
-			logger.Info("gRPC server stopped cleanly")
 		}()
 
 		if kafkaProducer != nil {
@@ -204,8 +202,9 @@ func main() {
 			go func() {
 				defer wg.Done()
 				logger.Info("stopping kafka producer gracefully")
-				kafkaProducer.Close()
-				logger.Info("kafka producer stopped cleanly")
+				if err := kafkaProducer.Close(); err != nil {
+					logger.Error("failed to stop kafka producer", "error", err)
+				}
 			}()
 		}
 
@@ -214,8 +213,9 @@ func main() {
 			go func() {
 				defer wg.Done()
 				logger.Info("stopping kafka consumer gracefully")
-				kafkaConsumer.Close()
-				logger.Info("kafka consumer stopped cleanly")
+				if err := kafkaConsumer.Close(); err != nil {
+					logger.Error("failed to stop kafka consumer", "error", err)
+				}
 			}()
 		}
 
@@ -234,5 +234,5 @@ func main() {
 		}
 	}
 
-	logger.Info("application stopped cleanly")
+	logger.Info("API stopped gracefully")
 }
