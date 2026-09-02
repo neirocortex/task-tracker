@@ -36,3 +36,14 @@ type TaskExecutionSaver interface {
 type TaskSaveNotyfier interface {
 	SendCreate(ctx context.Context, task *domain.Task)
 }
+
+// cashing contracts
+type ListTasksQueryExecutor interface {
+	Execute(ctx context.Context, filter *domain.TaskFilter, limit int, page int) (PaginatedTasks, error)
+}
+
+type TaskCacheRepository interface {
+	Get(ctx context.Context, key string) ([]byte, error)
+	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
+	InvalidateCalendar(ctx context.Context) error
+}

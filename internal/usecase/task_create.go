@@ -11,17 +11,26 @@ type CreateTaskCommand struct {
 	taskRepo         TaskSaver
 	tagRepo          TaskTagsSyncer
 	taskSaveNotyfier TaskSaveNotyfier
+	cache            TaskCacheRepository
 }
 
-func NewCreateTaskCommand(taskRepo TaskSaver, tagRepo TaskTagsSyncer, taskSaveNotyfier TaskSaveNotyfier) *CreateTaskCommand {
+func NewCreateTaskCommand(taskRepo TaskSaver, tagRepo TaskTagsSyncer, taskSaveNotyfier TaskSaveNotyfier, cache TaskCacheRepository) *CreateTaskCommand {
 	return &CreateTaskCommand{
 		taskRepo:         taskRepo,
 		tagRepo:          tagRepo,
 		taskSaveNotyfier: taskSaveNotyfier,
+		cache:            cache,
 	}
 }
 
 func (c *CreateTaskCommand) Execute(ctx context.Context, task *domain.Task, tagNames []string) error {
+	if c.cache != nil {
+		_ = c.cache.InvalidateCalendar(ctx)
+	}
+	return c.executeImpl(ctx, task, tagNames)
+}
+
+func (c *CreateTaskCommand) executeImpl(ctx context.Context, task *domain.Task, tagNames []string) error {
 	if err := c.validate(task, tagNames); err != nil {
 		return err
 	}

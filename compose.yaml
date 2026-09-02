@@ -35,6 +35,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: med_mis_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
   api:
     build:
       context: .
@@ -46,11 +59,15 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/med_mis?sslmode=disable
       - SERVER_ADDRESS=:8080
       - KAFKA_BROKERS=kafka:9092 
+      - REDIS_ADDRESS=redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   pgdata:
+  redisdata:

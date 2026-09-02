@@ -8,13 +8,21 @@ import (
 type UpdateTaskCommand struct {
 	taskRepo TaskModifier
 	tagRepo  TaskTagsSyncer
+	cache    TaskCacheRepository
 }
 
-func NewUpdateTaskCommand(taskRepo TaskModifier, tagRepo TaskTagsSyncer) *UpdateTaskCommand {
-	return &UpdateTaskCommand{taskRepo: taskRepo, tagRepo: tagRepo}
+func NewUpdateTaskCommand(taskRepo TaskModifier, tagRepo TaskTagsSyncer, cache TaskCacheRepository) *UpdateTaskCommand {
+	return &UpdateTaskCommand{taskRepo: taskRepo, tagRepo: tagRepo, cache: cache}
 }
 
 func (c *UpdateTaskCommand) Execute(ctx context.Context, task *domain.Task, tagNames []string) error {
+	if c.cache != nil {
+		_ = c.cache.InvalidateCalendar(ctx)
+	}
+	return c.executeImpl(ctx, task, tagNames)
+}
+
+func (c *UpdateTaskCommand) executeImpl(ctx context.Context, task *domain.Task, tagNames []string) error {
 	if err := (&CreateTaskCommand{}).validate(task, tagNames); err != nil {
 		return err
 	}

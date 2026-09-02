@@ -2,23 +2,30 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"sort"
+	"strconv"
+	"strings"
 	"taskTracker/internal/domain"
 	"time"
 )
 
 // cqrs for solid srp : every command has separate object
 type ListTasksQuery struct {
-	taskRepo      TaskViewer
-	tagRepo       TaskTagsBulkViewer
-	executionRepo TaskExecutionViewer
+	taskRepo        TaskViewer
+	tagRepo         TaskTagsBulkViewer
+	executionRepo   TaskExecutionViewer
+	cache           TaskCacheRepository
+	defaultCacheTTL time.Duration
 }
 
-func NewListTasksQuery(taskRepo TaskViewer, tagRepo TaskTagsBulkViewer, execRepo TaskExecutionViewer) *ListTasksQuery {
+func NewListTasksQuery(taskRepo TaskViewer, tagRepo TaskTagsBulkViewer, execRepo TaskExecutionViewer, cache TaskCacheRepository, defaultCacheTTL time.Duration) *ListTasksQuery {
 	return &ListTasksQuery{
-		taskRepo:      taskRepo,
-		tagRepo:       tagRepo,
-		executionRepo: execRepo,
+		taskRepo:        taskRepo,
+		tagRepo:         tagRepo,
+		executionRepo:   execRepo,
+		cache:           cache,
+		defaultCacheTTL: defaultCacheTTL,
 	}
 }
 
@@ -28,7 +35,7 @@ type PaginatedTasks struct {
 	TotalPages int
 }
 
-func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter, limit int, page int) (PaginatedTasks, error) {
+func (q *ListTasksQuery) executeImpl(ctx context.Context, filter *domain.TaskFilter, limit int, page int) (PaginatedTasks, error) {
 	if err := q.validate(filter, limit, page); err != nil {
 		return PaginatedTasks{}, err
 	}
@@ -160,4 +167,58 @@ func calcPagesTask(totalCount int, limit int) int {
 	} else {
 		return 0
 	}
+}
+
+func (q *ListTasksQuery) Execute(ctx context.Context, filter *domain.TaskFilter, limit int, page int) (PaginatedTasks, error) {
+	if q.cache == nil {
+		return q.executeImpl(ctx, filter, limit, page)
+	}
+
+	cacheKey := q.generateCacheKey(filter, limit, page)
+
+	if cachedData, err := q.cache.Get(ctx, cacheKey); err == nil && cachedData != nil {
+		var cachedResult PaginatedTasks
+		if err := json.Unmarshal(cachedData, &cachedResult); err == nil {
+			return cachedResult, nil
+		}
+	}
+
+	result, err := q.executeImpl(ctx, filter, limit, page)
+	if err != nil {
+		return PaginatedTasks{}, err
+	}
+
+	if bytes, err := json.Marshal(result); err == nil {
+		_ = q.cache.Set(ctx, cacheKey, bytes, q.defaultCacheTTL)
+	}
+
+	return result, nil
+}
+
+func (q *ListTasksQuery) generateCacheKey(filter *domain.TaskFilter, limit int, page int) string {
+	var sb strings.Builder
+
+	sb.Grow(96)
+
+	sb.WriteString("tasks:cal:l:")
+	sb.WriteString(strconv.Itoa(limit))
+	sb.WriteString(":p:")
+	sb.WriteString(strconv.Itoa(page))
+
+	if filter != nil {
+		if filter.Status != nil {
+			sb.WriteString(":st:")
+			sb.WriteString(string(*filter.Status))
+		}
+		if filter.DueDateFrom != nil {
+			sb.WriteString(":from:")
+			sb.WriteString(filter.DueDateFrom.Format(time.DateOnly))
+		}
+		if filter.DueDateTo != nil {
+			sb.WriteString(":to:")
+			sb.WriteString(filter.DueDateTo.Format(time.DateOnly))
+		}
+	}
+
+	return sb.String()
 }

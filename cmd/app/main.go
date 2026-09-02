@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -28,6 +29,7 @@ import (
 	deliveryHttp "taskTracker/internal/delivery/http"
 	repositoryKafka "taskTracker/internal/repository/kafka"
 	repositoryPostgres "taskTracker/internal/repository/postgres"
+	repositoryRedis "taskTracker/internal/repository/redis"
 	usecase "taskTracker/internal/usecase"
 )
 
@@ -96,17 +98,30 @@ func main() {
 	kafkaProducer := repositoryKafka.NewTaskNotyfier(kafkaAddr)
 	kafkaConsumer := repositoryKafka.NewTaskConsumer(kafkaAddr, kafkaProducer)
 
+	//redis
+	redisAddr := os.Getenv("REDIS_ADDRESS")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379" // Дефолт для локального запуска без докера
+	}
+
+	// 2. Инициализируем клиент Redis
+	redisClient, err := newRedisClient(redisAddr)
+	if err != nil {
+		logger.Error("Redis initialization error:", "error", err)
+	}
+
 	// clean architecture layers dependency injection
 	// repository
 	taskRepository := repositoryPostgres.NewTaskRepository(db)
 	tagRepository := repositoryPostgres.NewTagRepository(db)
+	taskCache := repositoryRedis.NewTaskCacheRepository(redisClient)
 
 	// usecase
-	taskCreateCmd := usecase.NewCreateTaskCommand(taskRepository, tagRepository, kafkaProducer)
-	taskUpdateCmd := usecase.NewUpdateTaskCommand(taskRepository, tagRepository)
-	taskDeleteCmd := usecase.NewDeleteTaskCommand(taskRepository)
+	taskCreateCmd := usecase.NewCreateTaskCommand(taskRepository, tagRepository, kafkaProducer, taskCache)
+	taskUpdateCmd := usecase.NewUpdateTaskCommand(taskRepository, tagRepository, taskCache)
+	taskDeleteCmd := usecase.NewDeleteTaskCommand(taskRepository, taskCache)
 	taskGetQ := usecase.NewGetTaskByIDQuery(taskRepository, tagRepository)
-	taskListQ := usecase.NewListTasksQuery(taskRepository, tagRepository, taskRepository)
+	taskListQ := usecase.NewListTasksQuery(taskRepository, tagRepository, taskRepository, taskCache, 5*time.Minute)
 	recordExecCmd := usecase.NewRecordExecutionCommand(taskRepository)
 
 	tagCreateCmd := usecase.NewCreateTagCommand(tagRepository)
@@ -219,6 +234,17 @@ func main() {
 			}()
 		}
 
+		if redisClient != nil {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				logger.Info("stopping redis gracefully")
+				if err := redisClient.Close(); err != nil {
+					logger.Error("failed to stop redis", "error", err)
+				}
+			}()
+		}
+
 		allServersStopped := make(chan struct{})
 		go func() {
 			wg.Wait()
@@ -235,4 +261,31 @@ func main() {
 	}
 
 	logger.Info("API stopped gracefully")
+}
+
+func newRedisClient(addr string) (*redis.Client, error) {
+	opts := &redis.Options{
+		Addr:     addr,
+		Password: "",
+		DB:       0,
+
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
+
+		PoolSize:     10,
+		MinIdleConns: 3,
+	}
+
+	client := redis.NewClient(opts)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		_ = client.Close()
+		return nil, fmt.Errorf("failed to ping redis at %s: %w", addr, err)
+	}
+
+	return client, nil
 }
