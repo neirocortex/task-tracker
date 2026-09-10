@@ -67,7 +67,16 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
-	req := ParseGetTasksRequest(r)
+	q := r.URL.Query()
+	page, _ := strconv.Atoi(q.Get("page"))
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	req := GetTasksRequest{
+		Status:      q.Get("status"),
+		DueDateFrom: q.Get("due_date_from"),
+		DueDateTo:   q.Get("due_date_to"),
+		Page:        page,
+		Limit:       limit,
+	}
 
 	filter := req.ToDomainFilter()
 

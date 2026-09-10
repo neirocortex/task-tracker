@@ -1,8 +1,6 @@
 package http
 
 import (
-	"net/http"
-	"strconv"
 	"taskTracker/internal/domain"
 	"time"
 )
@@ -87,30 +85,6 @@ type GetTasksRequest struct {
 	DueDateTo   string
 	Page        int
 	Limit       int
-}
-
-func ParseGetTasksRequest(r *http.Request) GetTasksRequest {
-	q := r.URL.Query()
-
-	page, _ := strconv.Atoi(q.Get("page"))
-	if page <= 0 {
-		page = 1
-	}
-
-	limit, _ := strconv.Atoi(q.Get("limit"))
-	if limit <= 0 {
-		limit = 20
-	} else if limit > 100 {
-		limit = 100
-	}
-
-	return GetTasksRequest{
-		Status:      q.Get("status"),
-		DueDateFrom: q.Get("due_date_from"),
-		DueDateTo:   q.Get("due_date_to"),
-		Page:        page,
-		Limit:       limit,
-	}
 }
 
 func (req GetTasksRequest) ToDomainFilter() *domain.TaskFilter {
